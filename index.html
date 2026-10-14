@@ -9036,7 +9036,8 @@ function doSendEmail() {
   const agentEmails = {
     'מרקו': 'marko@bconnect.co.il',
     'יונה': 'yona@bconnect.co.il',
-    'אביעד': 'Aviads@bconnect.co.il'
+    'אביעד': 'Aviads@bconnect.co.il',
+    'וילי': 'Villy@bconnect.co.il'
   };
   const toEmail = agentEmails[agent] || OWNER_EMAIL;
   const encodedBody = encodeURIComponent(body);
@@ -13512,7 +13513,8 @@ function doSendWhatsApp() {
   const agentPhones = {
     'מרקו': '972509009793',
     'יונה': '972544449587',
-    'אביעד': '972502572863'
+    'אביעד': '972502572863',
+    'וילי': '972544878315'
   };
   const toPhone = agentPhones[agent] || OWNER_PHONE;
   window.open(`https://wa.me/${toPhone}?text=${encodeURIComponent(text)}`, '_blank');
