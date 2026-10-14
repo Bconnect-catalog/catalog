@@ -1730,6 +1730,7 @@ function _resetSessionState() {
     orders = {}; orderPrices = {}; itemNotes = {}; bonusOrders = {};
     shippingLineAdded = false; shippingProduct = null;
     if (typeof _clearFreeItems === 'function') _clearFreeItems(); if (typeof _clearPctBonus === 'function') _clearPctBonus();
+    if (window._editingOrder) { window._editingOrder = null; try { _editBanner(false); } catch(e) {} }
   } catch(e) {}
   try {
     window._itemMeta = {};
@@ -8343,6 +8344,8 @@ function doExportExcel() {
       sc(R,0,txt,false,11,null,'right');
       merge(R,0,6); R++;
     });
+    var _edXl = (typeof _editTag === 'function' && !window._histExport) ? _editTag() : '';
+    if (_edXl) { sc(R,0,_edXl,true,12,'FFE65100','right'); merge(R,0,6); R++; }
 
     // פרטי לקוח קצה (משלוח לבית לקוח) — מודגש באדום
     var _ecXl = getEndCustomerDetails();
@@ -9004,6 +9007,7 @@ function doSendEmail() {
   const NL = String.fromCharCode(10);
   const subject = encodeURIComponent('\u05d4\u05d6\u05de\u05e0\u05d4 \u05d7\u05d3\u05e9\u05d4 BConnect' + (customer ? ' - ' + customer : ''));
   let body = '\u05d4\u05d6\u05de\u05e0\u05d4 \u05d7\u05d3\u05e9\u05d4 BConnect' + NL;
+  if (typeof _editTag === 'function' && _editTag()) body += _editTag() + NL;
   if (customer) body += '\u05dc\u05e7\u05d5\u05d7: ' + customer + NL;
   if (custNum) body += '\u05de\u05e1\u05e4\u05e8 \u05dc\u05e7\u05d5\u05d7: ' + custNum + NL;
   if (orderNum) body += 'מספר הזמנה: ' + orderNum + NL;
@@ -10224,10 +10228,10 @@ function _freeItemsPersist() {
 }
 function _freeItemsSnapshot() {
   var out = {};
-  Object.keys(window._freeItems || {}).forEach(function(bc){ var p = window._freeItems[bc]; out[bc] = {name: p.name, price: p.dealer_price}; });
+  Object.keys(window._freeItems || {}).forEach(function(bc){ var p = window._freeItems[bc]; out[bc] = {name: p.name, price: p.dealer_price, real: p.__real_bc || ''}; });
   return out;
 }
-function _ensureFreeItem(bc, name, price) {
+function _ensureFreeItem(bc, name, price, realBc) {
   var p = ALL_PRODUCTS.find(function(x){ return x.barcode === bc; });
   if (p && !p.__free) return null;                     // ברקוד של מוצר אמיתי — לא נוגעים
   if (!p) {
@@ -10239,12 +10243,14 @@ function _ensureFreeItem(bc, name, price) {
   }
   p.name = _freeClean(name) || p.name || bc;
   p.dealer_price = Math.max(0, parseFloat(price) || 0);
+  // פריט חופשי על ברקוד שקיים בקטלוג (14/10/26): מפתח <ברקוד>#fN, ובייצוא יוצא הברקוד האמיתי
+  if (realBc) p.__real_bc = String(realBc);
   window._freeItems[bc] = p;
   _freeItemsPersist();
   return p;
 }
 function _restoreFreeItems(map) {
-  Object.keys(map || {}).forEach(function(bc){ var v = map[bc] || {}; _ensureFreeItem(bc, v.name, v.price); });
+  Object.keys(map || {}).forEach(function(bc){ var v = map[bc] || {}; _ensureFreeItem(bc, v.name, v.price, v.real || ''); });
 }
 // שורה מטיוטת ענן / היסטוריה: משחזרים רק אם היא באמת פריט חופשי ואינה בקטלוג
 function _ensureFreeFromLine(it) {
@@ -10252,9 +10258,22 @@ function _ensureFreeFromLine(it) {
   try {
     var bc = it && (it.barcode || it.bc);
     if (!bc || bc === '__shipping__' || !it.name) return;
+    var _mf = /^(.*)#f\d*$/.exec(bc);
+    var _realF = _mf ? _mf[1] : ((it.free && ALL_PRODUCTS.some(function(x){ return x.barcode === bc && !x.__free; })) ? bc : '');
+    if (_realF) {
+      var _k = _mf ? bc : _freeKeyFor(_realF);
+      _ensureFreeItem(_k, it.name, it.price != null ? it.price : it.dealer_price, _realF);
+      it.barcode = _k; if (it.bc) it.bc = _k;
+      return;
+    }
     if (ALL_PRODUCTS.some(function(x){ return x.barcode === bc && !x.__free; })) return;
     if (it.free || /^999-\d+$/.test(bc) || window._freeItems[bc]) _ensureFreeItem(bc, it.name, it.price != null ? it.price : it.dealer_price);
   } catch(e) {}
+}
+// מפתח פנוי לפריט חופשי על ברקוד אמיתי: <ברקוד>#f1, #f2...
+function _freeKeyFor(realBc) {
+  var n = 1; while (ALL_PRODUCTS.some(function(x){ return x.barcode === realBc + '#f' + n; })) n++;
+  return realBc + '#f' + n;
 }
 function _clearFreeItems() {
   Object.keys(window._freeItems || {}).forEach(function(bc){
@@ -10313,12 +10332,17 @@ function _addFreeItem(where) {
   if (!(qty >= 1)) { err.textContent = 'נא למלא כמות (1 ומעלה)'; g('qty').focus(); return; }
   if (bc) {
     var real = ALL_PRODUCTS.find(function(x){ return x.barcode === bc && !x.__free; });
-    if (real) { err.textContent = 'הברקוד קיים בקטלוג (' + _freeClean(real.name) + ') — חפש אותו בחיפוש הרגיל'; g('bc').focus(); return; }
+    if (real) {
+      // 14/10/26: מותר — אחרי אישור. השורה נפרדת מהשורה הרגילה של המוצר ויורדת מהמלאי שלו.
+      if (!confirm('הברקוד ' + bc + ' קיים בקטלוג:\n' + _freeClean(real.name) + '\n\nאישור = להוסיף כפריט חופשי בשורה נפרדת, במחיר שהוזן (₪' + price + ')\nביטול = לא להוסיף')) { g('bc').focus(); return; }
+      var realBc = bc;
+      bc = _freeKeyFor(realBc);
+    }
   } else {
     var n = 1; while (ALL_PRODUCTS.some(function(x){ return x.barcode === '999-' + n; })) n++;
     bc = '999-' + n;
   }
-  var p = _ensureFreeItem(bc, name, price);
+  var p = _ensureFreeItem(bc, name, price, (typeof realBc !== 'undefined' && realBc) ? realBc : '');
   if (!p) return;
   orders[bc] = qty;
   orderPrices[bc] = p.dealer_price;
@@ -10564,6 +10588,7 @@ function getOrderedProducts() {
     var _o = {...p, dealer_price: price, qty: qty, lineTotal: price * qty,
             by: _st.by, pxby: _st.pxby, bonus: _bn, promo: _pr, disc: _dsc};
     if (p.__pct_bonus) { _o._nk = p.barcode; _o.barcode = p.__bonus_of; _o.bonus = 0; _o.promo = null; _o.disc = null; }
+    if (p.__free && p.__real_bc) { _o._nk = p.barcode; _o.barcode = p.__real_bc; _o.bonus = 0; _o.promo = null; _o.disc = null; }
     return _o;
   });
   // שורת משלוח — אם קיימת ב-orders (הלוגיקה מנוהלת ב-showCartSummary/updateDeliveryOption)
@@ -10938,6 +10963,15 @@ function _saveHistory(extraOrderNum) {
     };
     // localStorage
     var _hist = JSON.parse(localStorage.getItem('bc_orders_history')||'[]');
+    var _ed = window._editingOrder;
+    if (_ed) {
+      _entry.status = 'עודכנה';
+      // ההזמנה המקורית נמחקת מההיסטוריה (14/10/26, מרקו): אחרת היא נספרת פעמיים בדוחות ובנרכש-לאחרונה.
+      // התיעוד נשאר בהזמנה המעודכנת עצמה ("מחליפה את ההזמנה מ-<תאריך>").
+      var _isOrig = function(x){ return x.date === _ed.date && (x.customerName||'') === _ed.customerName && Number(x.total||0) === _ed.total; };
+      _hist = _hist.filter(function(x){ return !_isOrig(x); });
+      if (window._loadedHistory) window._loadedHistory = window._loadedHistory.filter(function(x){ return !_isOrig(x); });
+    }
     _hist.unshift(_entry);
     if (_hist.length > 100) _hist.splice(100);
     localStorage.setItem('bc_orders_history', JSON.stringify(_hist));
@@ -10965,7 +10999,9 @@ function _saveHistory(extraOrderNum) {
         orderNumber: _orderNum.trim(),
         total: _total,
         items: _entry.items,
-        ship: _ship
+        ship: _ship,
+        status: _ed ? 'עודכנה' : undefined,
+        replaces: _ed ? {date: _ed.date, customerName: _ed.customerName, total: _ed.total} : undefined
       }));
       fetch(SHEETS_URL, {
         method: 'POST',
@@ -11002,8 +11038,8 @@ function deductStock() {
   // קיזוז מלאי ב-Google Sheets (כמות + בונוס)
   // אוספים את המלאי המקורי לפני הניכוי (כבר בוצע למעלה) כדי שהשרת יוכל להוסיף מוצר חדש
   try {
-    const deductItems = items
-      .filter(function(item){ return item.barcode !== '__shipping__' && !item.__free; }) // פריט חופשי לא נמצא בגיליון המלאי
+    var deductItems = items
+      .filter(function(item){ return item.barcode !== '__shipping__' && (!item.__free || item.__real_bc); }) // פריט חופשי לא נמצא בגיליון המלאי
       .map(function(item){
         const bonusQty = getBonusQty(item);
         // חיפוש המוצר בכל המערכים כדי לשלוח את המלאי שהיה לפני הניכוי
@@ -11018,6 +11054,7 @@ function deductStock() {
         if (foundP) obj.stockAfter = foundP.stock; // המלאי אחרי הניכוי (כבר עודכן)
         return obj;
       });
+    if (window._editingOrder) deductItems = _editNetDeduct(deductItems);
     if (deductItems.length > 0) {
       fetch(SHEETS_URL, {
         method: 'POST',
@@ -11027,6 +11064,7 @@ function deductStock() {
       }).catch(function(){}); // שקט — לא חוסם את הממשק
     }
   } catch(e) {}
+  if (window._editingOrder) { window._editingOrder = null; try { _editBanner(false); } catch(e) {} }
   // Remove shipping line and clear orders
   shippingLineAdded = false;
   delete orders['__shipping__'];
@@ -11871,6 +11909,124 @@ function duplicateHistoryItem(key) {
   } catch(e) { alert('שגיאה בשיכפול: ' + e.message); }
 }
 
+
+
+/* ══ עריכת הזמנה מההיסטוריה (14/10/26) ═══════════════════════════════════
+   סוכן/מנהל בלבד. ✏️ בכרטיס ההזמנה טוען אותה לעגלה כמו שכפול (מחירים של היום), והכמויות
+   שהוזמנו חוזרות זמנית למלאי המקומי כדי שאפשר יהיה להזמין אותן שוב. בשליחה:
+   • המלאי בשיטס זז רק בהפרש (חדש − ישן); שורה שבוטלה מחזירה מלאי (qty שלילי, staff בלבד בשרת).
+   • ההזמנה נשמרת בהיסטוריה בסטטוס "עודכנה", והמקורית נמחקת מההיסטוריה (גם בשיטס).
+   • אקסל/וואטסאפ/מייל נושאים שורה "הזמנה מעודכנת — מחליפה את ההזמנה מ-<תאריך>".
+   ביטול עריכה מחזיר את המלאי המקומי ומנקה את העגלה. */
+window._editingOrder = null;
+function _histIsStaff() {
+  try { var a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); return a.role === 'agent' || a.role === 'admin'; } catch(e) { return false; }
+}
+function _editRealBc(bc) { return String(bc || '').replace(/#(b|f\d*)$/, ''); }
+function _editStockArrays() {
+  var arrs = [PRODUCTS, ALL_PRODUCTS];
+  [SS_PRODUCTS,GLO_PRODUCTS,UGREEN_PRODUCTS,JLAB_PRODUCTS,REOLINK_PRODUCTS,HOHEM_PRODUCTS,
+   SHIFTCAM_PRODUCTS,PHILIPS_PRODUCTS,PHILIPS_AUDIO_PRODUCTS,BLAUPUNKT_PRODUCTS,BEYERPRO_PRODUCTS,BEYERLIFE_PRODUCTS,
+   MICROLAB_PRODUCTS,LAIFEN_PRODUCTS,BELKIN_PRODUCTS,KF_PRODUCTS,BANGOLUFSEN_PRODUCTS,
+   CLEARANCE_PRODUCTS,PROMO_PRODUCTS,JABRA_PRODUCTS].forEach(function(a){ if (typeof a !== 'undefined' && a) arrs.push(a); });
+  return arrs;
+}
+// מוסיף (sign=+1) או מוריד (sign=-1) את כמויות ההזמנה המקורית מהמלאי המקומי
+function _editAdjustLocalStock(items, sign) {
+  var per = {};
+  (items || []).forEach(function(it){
+    var bc = _editRealBc(it.barcode || it.bc); if (!bc || bc === '__shipping__') return;
+    per[bc] = (per[bc] || 0) + (Number(it.qty) || 0) + (Number(it.bonus) || 0);
+  });
+  var arrs = _editStockArrays();
+  Object.keys(per).forEach(function(bc){
+    var seen = [];
+    arrs.forEach(function(a){
+      var p = a.find(function(x){ return x.barcode === bc; });
+      if (!p || seen.indexOf(p) > -1 || typeof p.stock !== 'number') return;
+      seen.push(p);
+      p.stock = Math.max(0, p.stock + sign * per[bc]);
+    });
+  });
+}
+function _editTag() {
+  var e = window._editingOrder;
+  return e ? ('✏️ הזמנה מעודכנת — מחליפה את ההזמנה מ-' + e.date + (e.orderNumber ? ' (הזמנה ' + e.orderNumber + ')' : '')) : '';
+}
+function _editBanner(show) {
+  var b = document.getElementById('editOrderBanner');
+  if (!show) { if (b) b.remove(); return; }
+  if (!b) {
+    b = document.createElement('div'); b.id = 'editOrderBanner';
+    b.style.cssText = 'position:fixed;top:calc(env(safe-area-inset-top,0px) + 6px);left:50%;transform:translateX(-50%);z-index:99990;background:#3d2a00;border:1.5px solid #ffb84d;color:#ffd99a;border-radius:12px;padding:7px 12px;font-size:.8rem;font-weight:700;direction:rtl;box-shadow:0 6px 20px rgba(0,0,0,.5);display:flex;gap:10px;align-items:center;max-width:94vw';
+    document.body.appendChild(b);
+  }
+  var e = window._editingOrder;
+  b.innerHTML = '<span>✏️ עריכת הזמנה: ' + escapeHtml(e.customerName || '') + ' מ-' + escapeHtml(e.date) + ' — בשליחה היא תחליף את המקורית</span>'
+    + '<button type="button" onclick="cancelEditOrder()" style="background:#5a1a1a;border:1px solid #ff8a80;color:#ffc9c4;border-radius:8px;padding:3px 9px;font-weight:700;cursor:pointer;font-size:.75rem">ביטול עריכה</button>';
+}
+function _findHistByKey(key) {
+  var decoded = decodeURIComponent(key);
+  var hist = window._loadedHistory || JSON.parse(localStorage.getItem('bc_orders_history') || '[]');
+  for (var i = 0; i < hist.length; i++) {
+    if (hist[i].orderNumber && String(hist[i].orderNumber) === decoded) return hist[i];
+    var combo = (hist[i].date||'')+'||'+(hist[i].agent||'')+'||'+(hist[i].customerName||'')+'||'+(hist[i].customerNumber||'');
+    if (combo === decoded) return hist[i];
+  }
+  return null;
+}
+function editHistoryItem(key) {
+  try {
+    if (!_histIsStaff()) return;
+    var h = _findHistByKey(key);
+    if (!h) { alert('לא נמצאה הזמנה לעריכה'); return; }
+    if (h.status === 'הוחלפה') { alert('ההזמנה הזו כבר הוחלפה בהזמנה מעודכנת — ערוך את המעודכנת.'); return; }
+    if (window._editingOrder) { alert('כבר פתוחה עריכה של הזמנה אחרת. סיים או בטל אותה קודם.'); return; }
+    var hasCart = Object.keys(orders || {}).some(function(k){ return k !== '__shipping__' && orders[k] > 0; });
+    if (!confirm('עריכת ההזמנה של ' + (h.customerName || '') + ' מ-' + h.date + '\n\n'
+        + 'הכמויות שהוזמנו יחזרו זמנית למלאי, וההזמנה תיטען לעגלה לעדכון.\n'
+        + 'בשליחה — ההזמנה המעודכנת תחליף את המקורית, והמלאי יתעדכן רק לפי השינוי.'
+        + (hasCart ? '\n\n⚠️ העגלה הנוכחית תוחלף.' : '') + '\n\nלהמשיך?')) return;
+    var src = JSON.parse(JSON.stringify(h));   // עותק נקי — השכפול משנה את it.barcode של שורות בונוס/חופשי
+    duplicateHistoryItem(key);
+    // הערות השורות חוזרות איתן (השכפול הרגיל לא מעתיק הערות)
+    (h.items || []).forEach(function(it){
+      var k = it.barcode || it.bc;
+      if (it.note && k) itemNotes[k] = it.note;
+    });
+    var on = document.getElementById('orderNumber'); if (on && src.orderNumber) on.value = src.orderNumber;
+    window._editingOrder = {date: src.date, customerName: src.customerName || '', customerNumber: src.customerNumber || '',
+                            total: Number(src.total) || 0, orderNumber: src.orderNumber || '', items: src.items || []};
+    _editAdjustLocalStock(src.items, +1);
+    _editBanner(true);
+    try { updateBar(); renderCards(); } catch(e) {}
+  } catch(e) { alert('שגיאה בעריכה: ' + e.message); }
+}
+function cancelEditOrder() {
+  var e = window._editingOrder; if (!e) return;
+  if (!confirm('לבטל את עריכת ההזמנה? העגלה תתנקה וההזמנה המקורית תישאר כמו שהיא.')) return;
+  _editAdjustLocalStock(e.items, -1);
+  window._editingOrder = null;
+  _editBanner(false);
+  try { _resetCartAfterSend(); } catch(err) {}
+}
+// בשליחה: שורות הקיזוז הופכות להפרש מול ההזמנה המקורית
+function _editNetDeduct(deductItems) {
+  var e = window._editingOrder; if (!e) return deductItems;
+  var neu = {}, old = {};
+  deductItems.forEach(function(d){ var bc = _editRealBc(d.barcode); neu[bc] = (neu[bc] || 0) + (Number(d.qty) || 0); });
+  (e.items || []).forEach(function(it){
+    var bc = _editRealBc(it.barcode); if (!bc) return;
+    if (it.free && !/^\d{8,14}$/.test(bc)) return;   // פריט חופשי 999-N — לא במלאי
+    old[bc] = (old[bc] || 0) + (Number(it.qty) || 0) + (Number(it.bonus) || 0);
+  });
+  var out = [];
+  Object.keys(Object.assign({}, neu, old)).forEach(function(bc){
+    var net = (neu[bc] || 0) - (old[bc] || 0);
+    if (net !== 0) out.push({barcode: bc, qty: net});
+  });
+  return out;
+}
 
 // ייצוא XL מהיסטוריה — ללא עדכון מלאי וללא שמירת היסטוריה חדשה
 function exportHistoryToExcel(key) {
@@ -12902,6 +13058,9 @@ function _attachHistButtons(el) {
   el.querySelectorAll('button[data-dup]').forEach(function(btn) {
     btn.addEventListener('click', function() { duplicateHistoryItem(this.getAttribute('data-dup')); });
   });
+  el.querySelectorAll('button[data-edit]').forEach(function(btn) {
+    btn.addEventListener('click', function() { editHistoryItem(this.getAttribute('data-edit')); });
+  });
   el.querySelectorAll('button[data-xlkey]').forEach(function(btn) {
     btn.addEventListener('click', function() { exportHistoryToExcel(this.getAttribute('data-xlkey')); });
   });
@@ -12967,6 +13126,7 @@ function _buildHistHTML(hist) {
       + '<span style="color:#f1c40f;font-weight:700;font-size:.85rem">₪' + (h.total||0).toFixed(0) + '</span>'
       + '<button data-xlkey="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0;line-height:1" title="הורד Excel"><img src="data:image/webp;base64,UklGRroBAABXRUJQVlA4IK4BAADQBwCdASodACAAPmEokUWkIqGYDAQAQAYEtgBfKgk0txu8rcBj1veY+i/RY6rxWbWNxPgcso84LVG9Jd2+XbngSQVnvnNMAAD+/qs05tAE4tzA7Brcf4WUmnPsmEexqX9tOy0xF7vaDXtz9OhHxF8uKb8z77be7B927+b2yT+LH+5X3dPw//M8pEFv/9hmPhpy/g049lr3li/5t/qY/tf7xMda+Reby2WA+fKAqvtP1/ziQO3ZmwcgVuLRAe/hEE18uP//odfv81juh+xk+unxliLWCeWEu6ShZp80v7aNvyxf1vW+1gzdEXrJJoZgBhre6Lsv0OP7+exH2D7/Ah8KeAb1bJudjS58vK9T70dmjQ41vsk0HDV5mfx/uWauXcd/s/vm/TaLbJRitULFFIXlgZoQjM/8w5+Q0bXyS5HRu+iiB8MOv4ec89yr6f8f0/y/fTr1klVHzlWPZr8MpKlYmOcUEjM+/6m/it/RkCLVFj77XZgaa6t6QZLLfukDoO85siu+B2pva9+qF8Bq+Gbi+5mQWNYCxsblss0Pv9ZRbhX+dXaDIxe9yVobAAAA" style="height:22px;width:auto" alt="Excel"></button>'
       + '<button data-dup="' + _dupKey + '" style="background:none;border:none;color:#4caf50;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="שכפל הזמנה">📋</button>'
+      + ((_histIsStaff() && h.status !== 'הוחלפה') ? '<button data-edit="' + _dupKey + '" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="עריכת הזמנה — הכמויות חוזרות למלאי וההזמנה המעודכנת תחליף את זו">✏️</button>' : '')
       + '<button data-del-key="' + _dupKey + '" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="מחק">🗑</button>'
       + '</div></div>'
       + '<div style="color:#666;font-size:.72rem;margin-bottom:8px">' + h.date + (h.orderNumber?' | הזמנה: '+h.orderNumber:'') + '</div>'
@@ -13489,7 +13649,7 @@ function doSendWhatsApp() {
   const custNum = document.getElementById('customerNumber').value.trim();
   const agent = document.getElementById('agentSelect').value;
   const grandTotal = items.reduce((s,p) => s + p.lineTotal, 0);
-  let text = `📦 *הזמנה חדשה BConnect*\n`;
+  let text = (typeof _editTag === 'function' && _editTag()) ? `📦 *הזמנה מעודכנת BConnect*\n*${_editTag()}*\n` : `📦 *הזמנה חדשה BConnect*\n`;
   if (customer) text += `👤 לקוח: ${customer}\n`;
   if (custNum) text += `🔢 מספר לקוח: ${custNum}\n`;
   const orderNum = document.getElementById('orderNumber').value.trim();
