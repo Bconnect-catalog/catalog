@@ -22317,8 +22317,9 @@ function _agingRender() {
   var waPhone = String(c.phone || '').replace(/\D/g, '');
   var h = '';
   // מצב זמני: הדוח הוא כל ההיסטוריה והפתוחים חושבו בקירוב — לא לשליחה בלי בדיקה מול מערכת הגבייה
-  if (a.meta && a.meta.mode === 'fifo') h += '<div style="margin:10px 16px 0;padding:8px 12px;border-radius:10px;background:#3a2a0c;border:1px solid #b8861b;color:#ffd27a;font-size:.78rem;line-height:1.45">' +
+  if (_agingIsEstimated(a)) h += '<div style="margin:10px 16px 0;padding:8px 12px;border-radius:10px;background:#3a2a0c;border:1px solid #b8861b;color:#ffd27a;font-size:.78rem;line-height:1.45">' +
     '⚠️ <b>חישוב משוער</b> — היתרה מדויקת, אבל רשימת המסמכים חושבה בקירוב (FIFO) ועלולה להיות שונה ממערכת הגבייה. יש להשוות לפני שליחה ללקוח.</div>';
+  else if (a.meta && /^aging_match_/.test(a.meta.sourceFile || '')) h += '<div style="margin:8px 16px 0;font-size:.72rem;color:#7f8bb0">ℹ️ רשימת המסמכים שוחזרה מהתאמת התקבולים בהנה״ח (אומתה מול פוקט)</div>';
   // לקוח + איש קשר
   h += '<div style="padding:12px 16px 8px">' +
     '<div style="font-size:1.05rem;font-weight:800">' + _agingEsc(a.name) + ' <span style="color:#8792b3;font-weight:600;font-size:.85rem">' + _agingEsc(a.num) + '</span></div>' +
@@ -22474,9 +22475,14 @@ function _agingMessageText() {
   return t;
 }
 
+// חישוב משוער: כל הדוח בקירוב (מצב fifo ישן), או שורות הלקוח סומנו "משוער" (לקוח שלא הותאם)
+function _agingIsEstimated(a) {
+  return !!a && ((a.meta && a.meta.mode === 'fifo') || (a.rows || []).some(function (r) { return /משוער/.test(r.desc || ''); }));
+}
+
 function _agingCheckRows() {
   if (!_agingSendRows().length) { alert('לא סומנו שורות לשליחה'); return false; }
-  if (_aging.meta && _aging.meta.mode === 'fifo' &&
+  if (_agingIsEstimated(_aging) &&
       !confirm('⚠️ הנתונים הם חישוב משוער ועלולים להיות שונים ממערכת הגבייה.\nהשווית מול המערכת ואתה בטוח שהם נכונים?')) return false;
   return true;
 }
@@ -22574,7 +22580,7 @@ function _agingOrderCheck(num, name) {
     var badge = document.getElementById('agentCustBadge');
     if (badge && over >= 1 && badge.innerHTML.indexOf('agingOverTag') < 0)
       badge.innerHTML += '<div id="agingOverTag" style="margin-top:6px;color:#ff8a8a;font-weight:800">⚠️ לקוח בחריגת תשלום · <span dir="ltr">' + _agingMoney(over) + ' ₪</span></div>';
-    _agingShowOrderAlert({num: d.num || num, name: d.name || name, over: over, dueM: dueM, fifo: d.meta && d.meta.mode === 'fifo',
+    _agingShowOrderAlert({num: d.num || num, name: d.name || name, over: over, dueM: dueM, fifo: _agingIsEstimated({meta: d.meta, rows: d.rows}),
                           credit: _agingCreditLabel(_agingCredit({rows: d.rows, contact: d.contact || {}})), pay: (d.contact || {}).payMethod || ''});
   }).catch(function () {});
 }
