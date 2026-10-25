@@ -13257,6 +13257,15 @@ function _renderDraftListAgent(el, list) {
     updateDraftBtn();
     return;
   }
+  // טיוטה אחת ללקוח: הרשימה ממוינת מהחדש לישן, אז העותק הראשון של כל לקוח הוא העדכני
+  // (עותק ישן של הסוכן שנשאר אחרי ששמירה עברה לשורה של הלקוח — מוסתר, לא מוצג פעמיים)
+  var _seenCust = {};
+  list = list.filter(function(dr) {
+    var k = String(dr.customerNumber || '').trim() || ('n:' + String(dr.customerName || '').trim());
+    if (k === 'n:' || !_seenCust[k]) { _seenCust[k] = true; return true; }
+    return false;
+  });
+  _cachedDraftList = list;
   var html = '<div style="color:#888;font-size:.74rem;text-align:center;margin-bottom:10px">'+list.length+' טיוטות שמורות</div>';
   list.forEach(function(draft) {
     var customerName   = draft.customerName || '(ללא שם)';
@@ -13266,8 +13275,12 @@ function _renderDraftListAgent(el, list) {
     var itemCount = items.length;
     var totalUnits = items.reduce(function(s,it){return s+(it.qty||0);},0);
     var bcEsc = encodeURIComponent(customerName).replace(/'/g,"\\'");
-    // טיוטה שהלקוח פתח בעצמו — מסומנת, וסוכן לא מוחק אותה
-    var _ownerBadge = draft.ownerIsCustomer
+    // "הלקוח פתח" רק כשהלקוח באמת הזין שורה. השורה בגיליון יכולה להיות של הלקוח גם
+    // כשכל הפריטים של הסוכן (שמירת סוכן נכנסת לשורה הקיימת של הלקוח) — אז קובע ה-by של הפריטים.
+    // טיוטה ישנה בלי סימון by בכלל — לפי בעל השורה, כמו קודם.
+    var _anyBy = items.some(function(it){ return it && it.by; });
+    var _custLines = items.some(function(it){ return it && it.by === 'customer'; });
+    var _ownerBadge = (draft.ownerIsCustomer && (_custLines || !_anyBy))
       ? ' <span style="background:rgba(76,175,80,.18);color:#7fd694;border:1px solid #2e7d46;border-radius:4px;padding:1px 6px;font-size:.66rem;font-weight:600">הלקוח פתח</span>'
       : '';
     
@@ -22121,7 +22134,16 @@ function _agingDate(iso) {
   return m ? m[3] + '/' + m[2] + '/' + m[1].slice(2) : (iso || '');
 }
 function _agingToday() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
-function _agingOverdue(r) { return String(r.valueDate) < _agingToday(); }
+// מועד הגבייה בפועל: תאריך הערך + דחיית הגבייה של הלקוח (השרת מחשב dueDate; ערך = לפי הדוח)
+function _agingDue(r) { return String(r.dueDate || r.valueDate || ''); }
+function _agingOverdue(r) { return _agingDue(r) < _agingToday(); }
+function _agingSetGrace(rows, days) {
+  days = Number(days) || 0;
+  (rows || []).forEach(function (r) {
+    var m = String(r.valueDate || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    r.dueDate = m && days ? _agingIso(new Date(+m[1], m[2] - 1, +m[3] + days, 12)) : r.valueDate;
+  });
+}
 // מספר המסמך כמו באפליקציית הגבייה: זיכוי ותקבול עם קידומת CN
 function _agingDocLabel(r) {
   var n = r.sourceNo || r.docNo || '';
@@ -22129,7 +22151,7 @@ function _agingDocLabel(r) {
 }
 function _agingPeriodOf(r) {
   if (r.period) return String(r.period).replace(/\s+/g, ' ').trim();
-  var d = Math.floor((new Date(_agingToday()) - new Date(r.valueDate)) / 864e5);
+  var d = Math.floor((new Date(_agingToday()) - new Date(_agingDue(r))) / 864e5);
   if (d <= 0) return 'Current';
   return d <= 30 ? '0 - 30' : d <= 60 ? '31 - 60' : d <= 90 ? '61 - 90' : d <= 120 ? '91 - 120' : '121 +';
 }
@@ -22169,11 +22191,12 @@ function _agingCredit(a) {
   return calc === null ? null : {days: calc, src: 'מחושב'};
 }
 function _agingCreditLabel(cr) { return cr ? (cr.days ? 'שוטף + ' + cr.days : 'שוטף') : ''; }
+function _agingGraceLabel(c) { var g = Number((c || {}).graceDays) || 0; return g ? 'גבייה ' + g + ' יום אחרי תאריך הערך' : ''; }
 function _agingOverdueAmt(rows) { return _agingSum((rows || []).filter(_agingOverdue)); }
 // לתשלום עד סוף החודש הנוכחי: מסמכים שתאריך הערך שלהם מהיום ועד סוף החודש
 function _agingDueThisMonth(rows) {
   var t = _agingToday(), e = _agingIso(_agingEom(t));
-  return _agingSum((rows || []).filter(function (r) { return r.valueDate >= t && r.valueDate <= e; }));
+  return _agingSum((rows || []).filter(function (r) { var v = _agingDue(r); return v >= t && v <= e; }));
 }
 function _agingSum(rows) { return Math.round(rows.reduce(function (s, r) { return s + (Number(r.open) || 0); }, 0) * 100) / 100; }
 
@@ -22331,6 +22354,7 @@ function _agingRender() {
       (function () {
         var cr = _agingCredit(a);
         return '<br>💳 אשראי: ' + (cr ? '<b>' + _agingCreditLabel(cr) + '</b> <span style="color:#6f7aa0;font-size:.74rem">(' + cr.src + ')</span>' : '<span style="color:#6f7aa0">לא ידוע</span>') +
+          (_agingGraceLabel(c) ? ' <span style="color:#ffd27a;font-size:.78rem">· ⏱ ' + _agingGraceLabel(c) + '</span>' : '') +
           ' &nbsp; 💵 תנאי תשלום: ' + (c.payMethod ? '<b>' + _agingEsc(c.payMethod) + '</b>' : '<span style="color:#6f7aa0">לא הוגדר</span>');
       })() +
     '</div></div>';
@@ -22374,6 +22398,7 @@ function _agingRender() {
       '<div style="text-align:left;flex-shrink:0">' +
         '<div style="font-weight:800;direction:ltr">' + _agingMoney(r.open) + '</div>' +
         '<div style="font-size:.76rem;color:#6b7387;margin-top:2px">תאריך ערך ' + _agingDate(r.valueDate) + '</div>' +
+        (_agingDue(r) !== String(r.valueDate) ? '<div style="font-size:.72rem;color:#b8861b;font-weight:700">לגבייה ' + _agingDate(_agingDue(r)) + '</div>' : '') +
       '</div>' +
       '<span title="' + (od ? 'באיחור' : 'טרם הגיע מועדו') + '" style="width:18px;height:18px;border-radius:50%;flex-shrink:0;margin-top:2px;background:' + (od ? '#f06262' : '#2ec58a') + ';color:#fff;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center">i</span>' +
     '</label>';
@@ -22436,7 +22461,10 @@ function _agingEditContact() {
       var calc = _agingCalcCredit(_aging.rows);
       return '<div style="display:flex;gap:8px;align-items:center;margin-top:5px"><span style="font-size:.8rem;color:#c7d0ea;white-space:nowrap">אשראי: שוטף +</span>' +
         '<input id="agC_credit" inputmode="numeric" placeholder="' + (calc === null ? 'ימים' : 'מחושב: ' + calc) + '" value="' + _agingEsc(c.creditDays) + '" style="' + inp + ';margin-top:0;width:110px;direction:ltr;text-align:right">' +
-        '<span style="font-size:.7rem;color:#6f7aa0">ריק = לפי הדוח</span></div>';
+        '<span style="font-size:.7rem;color:#6f7aa0">ריק = לפי הדוח</span></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-top:5px"><span style="font-size:.8rem;color:#c7d0ea;white-space:nowrap">דחיית גבייה +</span>' +
+        '<input id="agC_grace" inputmode="numeric" placeholder="0" value="' + _agingEsc(c.graceDays) + '" style="' + inp + ';margin-top:0;width:110px;direction:ltr;text-align:right">' +
+        '<span style="font-size:.7rem;color:#6f7aa0">ימים אחרי תאריך הערך (חריגה רק אחריהם)</span></div>';
     })() +
     '<select id="agC_pay" style="' + inp + '"><option value="">תנאי תשלום — לבחירה</option>' +
       _AGING_PAY_METHODS.map(function (m) { return '<option' + (c.payMethod === m ? ' selected' : '') + '>' + _agingEsc(m) + '</option>'; }).join('') + '</select>' +
@@ -22448,9 +22476,9 @@ function _agingSaveContact() {
   if (!_aging) return;
   var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); };
   var params = {cust: _aging.num, contact: g('agC_contact'), phone: g('agC_phone'), email: g('agC_email'), address: (_aging.contact || {}).address || '',
-                creditDays: g('agC_credit').replace(/\D/g, ''), payMethod: g('agC_pay')};
+                creditDays: g('agC_credit').replace(/\D/g, ''), payMethod: g('agC_pay'), graceDays: g('agC_grace').replace(/\D/g, '')};
   _agingApi('saveAgingContact', params).then(function (d) {
-    if (d && d.ok) { _aging.contact = d.contact || params; _agingRender(); }
+    if (d && d.ok) { _aging.contact = d.contact || params; _agingSetGrace(_aging.rows, _aging.contact.graceDays); _agingRender(); }
     else alert('השמירה נכשלה' + (d && d.error ? ': ' + d.error : ''));
   }).catch(function () { alert('שגיאת תקשורת — לא נשמר'); });
 }
