@@ -1472,6 +1472,7 @@ var BC_AUTH_TTL_DAYS = 7;
     <div id="reorderBtnsRow" style="display:flex;gap:8px">
       <button onclick="_startNewOrderFromBtn()" style="flex:1;padding:14px 8px;border-radius:999px;background:rgba(12,22,40,var(--a-fill));-webkit-backdrop-filter:blur(16px) saturate(165%);backdrop-filter:blur(16px) saturate(165%);border:1.4px solid rgba(45,212,214,.78);color:#eaf6ff;font-size:1rem;cursor:pointer;box-shadow:0 0 4px rgba(45,212,214,.34),inset 0 0 26px rgba(45,212,214,.22),inset 0 1px 0 rgba(255,255,255,.10),0 6px 24px rgba(0,0,0,.5);font-weight:700">🛒 התחל הזמנה</button>
       <button onclick="openOrderHistory()" style="flex:1;padding:14px 8px;border-radius:999px;background:rgba(12,22,40,var(--a-fill));-webkit-backdrop-filter:blur(16px) saturate(165%);backdrop-filter:blur(16px) saturate(165%);border:1.4px solid rgba(45,212,214,.78);color:#eaf6ff;font-size:1rem;cursor:pointer;box-shadow:0 0 4px rgba(45,212,214,.34),inset 0 0 26px rgba(45,212,214,.22),inset 0 1px 0 rgba(255,255,255,.10),0 6px 24px rgba(0,0,0,.5);font-weight:600">📋 היסטוריית הזמנות</button>
+      <button id="agingHomeBtn" onclick="openAgingCard()" style="display:none;flex:1;padding:14px 8px;border-radius:999px;background:rgba(12,22,40,var(--a-fill));-webkit-backdrop-filter:blur(16px) saturate(165%);backdrop-filter:blur(16px) saturate(165%);border:1.4px solid rgba(45,212,214,.78);color:#eaf6ff;font-size:1rem;cursor:pointer;box-shadow:0 0 4px rgba(45,212,214,.34),inset 0 0 26px rgba(45,212,214,.22),inset 0 1px 0 rgba(255,255,255,.10),0 6px 24px rgba(0,0,0,.5);font-weight:600">💳 גיול חובות</button>
     </div>
     <div id="agentCustBadge" style="display:none;margin-top:8px;padding:8px 12px;border-radius:10px;background:rgba(168,127,255,.12);border:1px solid rgba(168,127,255,.35);font-size:.8rem;direction:rtl;text-align:center"></div>
     <div id="reorderSearchRow" style="display:none;flex-direction:column;gap:8px">
@@ -1745,6 +1746,8 @@ function _resetSessionState() {
     window._loadedHistory = null;
     window._duplicatedBarcodes = {};
     window._agentCustomerPopupShown = false;
+    window._agingList = null; window._agingListMeta = null;
+    if (typeof _agingCloseCard === 'function') { _aging = null; _agingCloseCard(); }
   } catch(e) {}
   try {
     localStorage.removeItem('bc_order_draft');
@@ -9713,6 +9716,7 @@ var BRAND_TILE_NEON = {
   'newtec': 'data:image/png;base64,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'
 };
 function buildHome() {
+  try { if (typeof _agingSyncBtn === 'function') _agingSyncBtn(); } catch(e) {}
   // הצג/הסתר אופציית משלוח חינם לפי תפקיד
   try {
     var _fsoHome = document.getElementById('freeShippingOption');
@@ -11513,6 +11517,7 @@ function _applyAgentCustomerMeta(name, num) {
     ? '<span style="color:#f5c842;font-weight:700">💰 לקוח מימושים</span>'
     : (discLabel ? '<span style="color:#64b5f6;font-weight:700">💎' + discLabel + '</span>' : '<span style="color:#90ee90">לקוח רגיל</span>');
   badge.innerHTML = '<span style="color:#ccc">לקוח נבחר: <strong style="color:#fff">' + name + '</strong></span> ' + typeTag;
+  if (num && typeof openAgingCard === 'function') badge.innerHTML += ' <button onclick="openAgingCard(\'' + String(num).replace(/[^0-9]/g,'') + '\')" style="margin-right:6px;padding:2px 10px;border-radius:999px;border:1px solid rgba(240,98,98,.6);background:rgba(240,98,98,.12);color:#ffb4b4;font-size:.75rem;cursor:pointer">💳 גיול</button>';
   badge.style.display = 'block';
 }
 
@@ -22096,6 +22101,339 @@ document.addEventListener('click', function(e){
     }
   } catch(e) { /* אין חיישן — נשארים במצב הרגיל */ }
 })();
+</script>
+<script>
+// ════════════════════════════════════════════════════════════════
+//  כרטיס לקוח — גיול חובות (נוסף 25/10/2026). סוכן/מנהל בלבד.
+//  הנתונים: Apps Script ‏getAging / getAgingList / saveAgingContact (Aging.gs),
+//  מגיליון "גיול" שמתעדכן מדוח הגיול השבועי. אין כאן שום נתון חוב בקובץ.
+//  ⚠️ הכול מתאפס ב-_resetSessionState (החלפת משתמש בלי רענון).
+// ════════════════════════════════════════════════════════════════
+var _aging = null;   // {num,name,agent,rows,contact,meta,sel:{},note,mode}
+
+function _agingIsStaff() { return typeof _isAgentOrAdmin === 'function' && _isAgentOrAdmin(); }
+function _agingEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function _agingMoney(v) { return (Number(v) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+function _agingDate(iso) {
+  var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + '/' + m[2] + '/' + m[1].slice(2) : (iso || '');
+}
+function _agingToday() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function _agingOverdue(r) { return String(r.valueDate) < _agingToday(); }
+// מספר המסמך כמו באפליקציית הגבייה: זיכוי ותקבול עם קידומת CN
+function _agingDocLabel(r) {
+  var n = r.sourceNo || r.docNo || '';
+  return (r.type === 'זיכוי' || r.type === 'תקבול') ? 'CN' + n : n;
+}
+function _agingPeriodOf(r) {
+  if (r.period) return String(r.period).replace(/\s+/g, ' ').trim();
+  var d = Math.floor((new Date(_agingToday()) - new Date(r.valueDate)) / 864e5);
+  if (d <= 0) return 'Current';
+  return d <= 30 ? '0 - 30' : d <= 60 ? '31 - 60' : d <= 90 ? '61 - 90' : d <= 120 ? '91 - 120' : '121 +';
+}
+// תאריך משוקלל של השורות המסומנות — ממוצע תאריכי הערך של החיובים לפי סכום
+// (כמו באפליקציית הגבייה: 365606+366138 ← 15/08/26). אין חיובים → לפי ערך מוחלט.
+function _agingWeightedDate(rows) {
+  var pos = rows.filter(function (r) { return r.open > 0; }), use = pos.length ? pos : rows;
+  var w = 0, t = 0;
+  use.forEach(function (r) { var a = Math.abs(r.open), ms = new Date(r.valueDate + 'T12:00:00').getTime(); if (!isNaN(ms) && a) { w += a; t += a * ms; } });
+  if (!w) return '';
+  var d = new Date(Math.round(t / w));
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function _agingSelected() { return _aging ? _aging.rows.filter(function (r, i) { return _aging.sel[i]; }) : []; }
+function _agingSum(rows) { return Math.round(rows.reduce(function (s, r) { return s + (Number(r.open) || 0); }, 0) * 100) / 100; }
+
+function _agingApi(action, params) {
+  if (window._AGING_MOCK) return Promise.resolve(window._AGING_MOCK(action, params));
+  var qs = Object.keys(params || {}).map(function (k) { return '&' + k + '=' + encodeURIComponent(params[k]); }).join('');
+  return fetch(SHEETS_URL + '?action=' + action + qs + _credQS()).then(function (r) { return r.json(); });
+}
+
+function _agingSyncBtn() {
+  var b = document.getElementById('agingHomeBtn');
+  if (b) b.style.display = _agingIsStaff() ? '' : 'none';
+}
+
+function _agingCloseCard() {
+  var p = document.getElementById('agingPanel');
+  if (p) p.remove();
+  document.body.style.overflow = '';
+}
+
+// פתיחה: עם מספר לקוח — ישר לכרטיס; בלי — חיפוש לקוח (עם רשימת החייבים)
+function openAgingCard(num, name) {
+  if (!_agingIsStaff()) return;
+  _agingCloseCard();
+  var p = document.createElement('div');
+  p.id = 'agingPanel';
+  p.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center';
+  p.innerHTML = '<div id="agingInner" style="background:#141a2e;border:1px solid #2c3658;border-radius:16px;width:94%;max-width:560px;height:92vh;display:flex;flex-direction:column;direction:rtl;color:#e8eefc;overflow:hidden">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;border-bottom:1px solid #26304d">' +
+      '<div style="font-weight:800;font-size:1.02rem">💳 כרטיס לקוח · גיול חובות</div>' +
+      '<button onclick="_agingCloseCard()" aria-label="סגור" style="background:none;border:none;color:#9aa6c8;font-size:1.4rem;cursor:pointer">✕</button></div>' +
+    '<div id="agingBody" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>' +
+    '<div id="agingFoot"></div></div>';
+  p.addEventListener('click', function (ev) { if (ev.target === p) _agingCloseCard(); });
+  document.body.appendChild(p);
+  document.body.style.overflow = 'hidden';
+  if (num) _agingLoad(num, name); else _agingRenderPicker();
+}
+
+function _agingRenderPicker() {
+  var body = document.getElementById('agingBody'); if (!body) return;
+  document.getElementById('agingFoot').innerHTML = '';
+  body.innerHTML = '<div style="padding:14px 16px">' +
+    '<input id="agingSearch" placeholder="חפש לקוח לפי שם או מספר..." autocomplete="off" oninput="_agingFilterPicker()" ' +
+    'style="width:100%;box-sizing:border-box;padding:11px 14px;border-radius:12px;border:1px solid #3d4b78;background:#0d1224;color:#fff;font-size:.92rem;outline:none">' +
+    '<div id="agingPickList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"><div style="color:#8792b3;text-align:center;padding:20px">טוען...</div></div></div>';
+  _agingApi('getAgingList', {}).then(function (d) {
+    window._agingList = (d && d.ok) ? d.list : [];
+    window._agingListMeta = d && d.meta;
+    _agingFilterPicker();
+  }).catch(function () { window._agingList = []; _agingFilterPicker(); });
+}
+
+function _agingFilterPicker() {
+  var box = document.getElementById('agingPickList'); if (!box) return;
+  var q = ((document.getElementById('agingSearch') || {}).value || '').trim().toLowerCase();
+  var list = (window._agingList || []).filter(function (c) {
+    return !q || String(c.name).toLowerCase().indexOf(q) >= 0 || String(c.num).indexOf(q) >= 0;
+  }).slice(0, 60);
+  if (!list.length) { box.innerHTML = '<div style="color:#8792b3;text-align:center;padding:20px">' + (q ? 'לא נמצא לקוח עם חוב פתוח' : 'אין נתוני גיול') + '</div>'; return; }
+  box.innerHTML = list.map(function (c) {
+    var od = c.overdue > 0.004;
+    return '<button onclick="_agingLoad(\'' + _agingEsc(c.num) + '\')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:right;padding:10px 12px;border-radius:10px;background:#1b2340;border:1px solid #2c3658;color:#e8eefc;cursor:pointer">' +
+      '<span><b>' + _agingEsc(c.name) + '</b><br><span style="color:#8792b3;font-size:.78rem">' + _agingEsc(c.num) + ' · ' + c.count + ' מסמכים</span></span>' +
+      '<span style="text-align:left;font-size:.82rem;white-space:nowrap"><span style="color:#8792b3;font-size:.7rem">באיחור </span><span style="direction:ltr;unicode-bidi:embed;color:' + (od ? '#ff6b6b' : '#5fd38d') + ';font-weight:800">' + _agingMoney(c.overdue) + '</span><br><span style="color:#8792b3;font-size:.7rem">יתרה </span><span style="direction:ltr;unicode-bidi:embed;color:#8792b3">' + _agingMoney(c.balance) + '</span></span></button>';
+  }).join('');
+}
+
+function _agingLoad(num, name) {
+  var body = document.getElementById('agingBody'); if (!body) return;
+  body.innerHTML = '<div style="color:#8792b3;text-align:center;padding:40px">טוען כרטיס...</div>';
+  document.getElementById('agingFoot').innerHTML = '';
+  _agingApi('getAging', {cust: num}).then(function (d) {
+    if (!d || !d.ok) {
+      body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">' + (d && d.error === 'forbidden' ? 'הלקוח אינו משויך אליך' : 'לא ניתן לטעון את הכרטיס') +
+        '<br><button onclick="_agingRenderPicker()" style="margin-top:12px;padding:7px 16px;border-radius:8px;background:#2c3658;border:none;color:#fff;cursor:pointer">חזרה לחיפוש</button></div>';
+      return;
+    }
+    var rows = (d.rows || []).slice().sort(function (a, b) { return a.valueDate < b.valueDate ? -1 : a.valueDate > b.valueDate ? 1 : 0; });
+    var sel = {}; rows.forEach(function (r, i) { if (_agingOverdue(r)) sel[i] = true; });   // ברירת מחדל: מה שבאיחור
+    _aging = {num: d.num, name: d.name || name || '', agent: d.agent, rows: rows, contact: d.contact || {}, meta: d.meta || {}, sel: sel, note: '', mode: 'selected'};
+    _agingRender();
+  }).catch(function () { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">שגיאת תקשורת</div>'; });
+}
+
+function _agingRender() {
+  var a = _aging, body = document.getElementById('agingBody'); if (!a || !body) return;
+  var c = a.contact || {}, all = _agingSum(a.rows);
+  var over = _agingSum(a.rows.filter(_agingOverdue));
+  var buckets = ['Current', '0 - 30', '31 - 60', '61 - 90', '91 - 120', '121 +'], bsum = {};
+  a.rows.forEach(function (r) { var k = _agingPeriodOf(r); bsum[k] = (bsum[k] || 0) + (Number(r.open) || 0); });
+  var waPhone = String(c.phone || '').replace(/\D/g, '');
+  var h = '';
+  // מצב זמני: הדוח הוא כל ההיסטוריה והפתוחים חושבו בקירוב — לא לשליחה בלי בדיקה מול מערכת הגבייה
+  if (a.meta && a.meta.mode === 'fifo') h += '<div style="margin:10px 16px 0;padding:8px 12px;border-radius:10px;background:#3a2a0c;border:1px solid #b8861b;color:#ffd27a;font-size:.78rem;line-height:1.45">' +
+    '⚠️ <b>חישוב משוער</b> — היתרה מדויקת, אבל רשימת המסמכים חושבה בקירוב (FIFO) ועלולה להיות שונה ממערכת הגבייה. יש להשוות לפני שליחה ללקוח.</div>';
+  // לקוח + איש קשר
+  h += '<div style="padding:12px 16px 8px">' +
+    '<div style="font-size:1.05rem;font-weight:800">' + _agingEsc(a.name) + ' <span style="color:#8792b3;font-weight:600;font-size:.85rem">' + _agingEsc(a.num) + '</span></div>' +
+    '<div id="agingContactView" style="margin-top:6px;font-size:.84rem;color:#c7d0ea;line-height:1.6">' +
+      '👤 ' + (_agingEsc(c.contact) || '<span style="color:#6f7aa0">אין איש קשר</span>') +
+      ' &nbsp; 📞 ' + (waPhone ? '<a href="tel:' + waPhone + '" style="color:#7fb2ff;direction:ltr;unicode-bidi:embed">' + _agingEsc(c.phone) + '</a>' : '<span style="color:#6f7aa0">אין טלפון</span>') +
+      '<br>✉️ ' + (c.email ? '<span style="direction:ltr;unicode-bidi:embed">' + _agingEsc(c.email) + '</span>' : '<span style="color:#6f7aa0">אין מייל</span>') +
+      ' <button onclick="_agingEditContact()" style="margin-right:6px;background:none;border:1px solid #3d4b78;color:#9fb4ea;border-radius:7px;padding:1px 8px;font-size:.75rem;cursor:pointer">✏️ עריכה</button>' +
+    '</div></div>';
+  // סיכום + גיול
+  h += '<div style="display:flex;gap:8px;padding:4px 16px 8px">' +
+    '<div style="flex:1;background:#1b2340;border-radius:10px;padding:8px 10px"><div style="font-size:.72rem;color:#8792b3">יתרה כוללת</div><div style="font-weight:800;direction:ltr;text-align:right">' + _agingMoney(all) + '</div></div>' +
+    '<div style="flex:1;background:#2a1724;border:1px solid #5c2635;border-radius:10px;padding:8px 10px"><div style="font-size:.72rem;color:#e7a0ad">באיחור</div><div style="font-weight:800;color:#ff8a8a;direction:ltr;text-align:right">' + _agingMoney(over) + '</div></div></div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 16px 10px;font-size:.66rem;text-align:center">' + buckets.map(function (k) {
+    var v = bsum[k] || 0, late = k !== 'Current';
+    return '<div style="background:#182039;border-radius:7px;padding:5px 2px"><div style="color:#8792b3;direction:ltr">' + (k === 'Current' ? 'טרם' : k.replace(' + ', '+')) + '</div>' +
+      '<div style="font-weight:700;direction:ltr;color:' + (v && late ? '#ffb4b4' : '#dfe6fb') + '">' + (v ? _agingMoney(v) : '—') + '</div></div>';
+  }).join('') + '</div>';
+  // רשימת המסמכים — כמו במסך "חשבוניות לתשלום"
+  var allSel = a.rows.length && a.rows.every(function (r, i) { return a.sel[i]; });
+  h += '<div style="margin:0 10px;background:#f7f8fb;border-radius:12px;color:#1d2433;overflow:hidden">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #e3e6ee">' +
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:800;cursor:pointer"><input type="checkbox" ' + (allSel ? 'checked' : '') + ' onchange="_agingSelAll(this.checked)" style="width:18px;height:18px">חשבוניות</label>' +
+      '<span style="display:flex;gap:14px;align-items:center;font-size:.82rem"><a href="javascript:_agingSelAll(true)" style="color:#2f6fd6">הכל</a><a href="javascript:_agingSelAll(false)" style="color:#2f6fd6">נקה</a>' +
+      '<b style="direction:ltr;color:#5a6378">' + _agingMoney(all) + '</b></span></div>';
+  if (!a.rows.length) h += '<div style="padding:24px;text-align:center;color:#6b7387">אין מסמכים פתוחים 🎉</div>';
+  a.rows.forEach(function (r, i) {
+    var od = _agingOverdue(r);
+    h += '<label style="display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-bottom:1px solid #e3e6ee;cursor:pointer;background:' + (a.sel[i] ? '#eef4ff' : '#fff') + '">' +
+      '<input type="checkbox" ' + (a.sel[i] ? 'checked' : '') + ' onchange="_agingToggle(' + i + ',this.checked)" style="width:18px;height:18px;margin-top:3px;flex-shrink:0">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:800;direction:ltr;text-align:right">' + _agingEsc(_agingDocLabel(r)) + ' <span style="font-weight:600;font-size:.7rem;color:#7a8299">' + _agingEsc(r.type) + '</span></div>' +
+        (r.original != null ? '<div style="font-size:.78rem;color:#6b7387">מקור <span style="direction:ltr;unicode-bidi:embed">' + _agingMoney(r.original) + '</span></div>' : '') +
+        (r.docDate ? '<div style="font-size:.76rem;color:#6b7387">תאריך מסמך ' + _agingDate(r.docDate) + '</div>' : '') +
+      '</div>' +
+      '<div style="text-align:left;flex-shrink:0">' +
+        '<div style="font-weight:800;direction:ltr">' + _agingMoney(r.open) + '</div>' +
+        '<div style="font-size:.76rem;color:#6b7387;margin-top:2px">תאריך ערך ' + _agingDate(r.valueDate) + '</div>' +
+      '</div>' +
+      '<span title="' + (od ? 'באיחור' : 'טרם הגיע מועדו') + '" style="width:18px;height:18px;border-radius:50%;flex-shrink:0;margin-top:2px;background:' + (od ? '#f06262' : '#2ec58a') + ';color:#fff;font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center">i</span>' +
+    '</label>';
+  });
+  h += '</div>';
+  // הערה + אופן שליחה
+  h += '<div style="padding:12px 16px 6px">' +
+    '<textarea id="agingNote" oninput="_aging.note=this.value" placeholder="הערה לסוחר (תופיע בהודעה ובקובץ)..." rows="2" ' +
+    'style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:10px;border:1px solid #3d4b78;background:#0d1224;color:#fff;font-size:.86rem;resize:vertical;font-family:inherit">' + _agingEsc(a.note) + '</textarea>' +
+    '<div style="display:flex;gap:14px;font-size:.8rem;color:#c7d0ea;margin-top:6px">' +
+      '<label style="cursor:pointer"><input type="radio" name="agingMode" ' + (a.mode === 'selected' ? 'checked' : '') + ' onchange="_aging.mode=\'selected\'"> רק השורות המסומנות</label>' +
+      '<label style="cursor:pointer"><input type="radio" name="agingMode" ' + (a.mode === 'all' ? 'checked' : '') + ' onchange="_aging.mode=\'all\'"> כל הכרטיס (מסומנות מודגשות)</label></div>' +
+    (a.meta && a.meta.importedAt ? '<div style="font-size:.7rem;color:#6f7aa0;margin-top:8px">נתוני הגיול עודכנו: ' + _agingEsc(a.meta.importedAt) + '</div>' : '') +
+    '<button onclick="_agingRenderPicker()" style="margin:10px 0 4px;background:none;border:none;color:#7fb2ff;font-size:.8rem;cursor:pointer">→ לקוח אחר</button></div>';
+  body.innerHTML = h;
+  _agingRenderFoot();
+}
+
+function _agingRenderFoot() {
+  var f = document.getElementById('agingFoot'); if (!f || !_aging) return;
+  var s = _agingSelected(), wd = _agingWeightedDate(s);
+  var btn = 'flex:1;padding:10px 6px;border-radius:10px;border:none;font-weight:800;font-size:.85rem;cursor:pointer;color:#fff';
+  f.innerHTML = '<div style="background:#26335f;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-size:.86rem">סכום כולל: <b style="direction:ltr;unicode-bidi:embed;font-size:1.02rem">' + _agingMoney(_agingSum(s)) + '</b></div>' +
+      '<div style="font-size:.82rem;color:#c7d0ea">תאריך משוקלל: <b>' + (wd ? _agingDate(wd) : '—') + '</b></div></div>' +
+      '<div style="font-size:.78rem;color:#9fb0dd">' + s.length + ' מסומנות</div></div>' +
+    '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
+      '<button onclick="_agingSendWhatsApp()" style="' + btn + ';background:#1fa855">💬 וואטסאפ</button>' +
+      '<button onclick="_agingSendEmail()" style="' + btn + ';background:#3a6fd8">✉️ מייל</button>' +
+      '<button onclick="_agingSharePdf()" style="' + btn + ';background:#7b52d6">📄 PDF / שיתוף</button></div>';
+}
+
+function _agingToggle(i, on) { if (!_aging) return; if (on) _aging.sel[i] = true; else delete _aging.sel[i]; _agingRender(); }
+function _agingSelAll(on) { if (!_aging) return; _aging.sel = {}; if (on) _aging.rows.forEach(function (r, i) { _aging.sel[i] = true; }); _agingRender(); }
+
+function _agingEditContact() {
+  var v = document.getElementById('agingContactView'); if (!v || !_aging) return;
+  var c = _aging.contact || {};
+  var inp = 'width:100%;box-sizing:border-box;padding:7px 10px;border-radius:8px;border:1px solid #3d4b78;background:#0d1224;color:#fff;font-size:.85rem;margin-top:5px';
+  v.innerHTML = '<input id="agC_contact" placeholder="איש קשר" value="' + _agingEsc(c.contact) + '" style="' + inp + '">' +
+    '<input id="agC_phone" placeholder="טלפון נייד" inputmode="tel" value="' + _agingEsc(c.phone) + '" style="' + inp + ';direction:ltr;text-align:right">' +
+    '<input id="agC_email" placeholder="מייל" inputmode="email" value="' + _agingEsc(c.email) + '" style="' + inp + ';direction:ltr;text-align:right">' +
+    '<div style="display:flex;gap:8px;margin-top:8px"><button onclick="_agingSaveContact()" style="flex:1;padding:8px;border-radius:8px;border:none;background:#2ec58a;color:#062;font-weight:800;cursor:pointer">שמירה</button>' +
+    '<button onclick="_agingRender()" style="flex:1;padding:8px;border-radius:8px;border:1px solid #3d4b78;background:none;color:#c7d0ea;cursor:pointer">ביטול</button></div>';
+}
+
+function _agingSaveContact() {
+  if (!_aging) return;
+  var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); };
+  var params = {cust: _aging.num, contact: g('agC_contact'), phone: g('agC_phone'), email: g('agC_email'), address: (_aging.contact || {}).address || ''};
+  _agingApi('saveAgingContact', params).then(function (d) {
+    if (d && d.ok) { _aging.contact = d.contact || params; _agingRender(); }
+    else alert('השמירה נכשלה' + (d && d.error ? ': ' + d.error : ''));
+  }).catch(function () { alert('שגיאת תקשורת — לא נשמר'); });
+}
+
+// ── שליחה ─────────────────────────────────────────────────────────
+function _agingSendRows() { return _aging.mode === 'all' ? _aging.rows : _agingSelected(); }
+
+function _agingMessageText() {
+  var a = _aging, c = a.contact || {}, s = _agingSelected(), rows = _agingSendRows();
+  var first = String(c.contact || '').split(/[\s-]/)[0];
+  var t = 'שלום' + (first ? ' ' + first : '') + ',\n';
+  if (a.note && a.note.trim()) t += a.note.trim() + '\n';
+  t += '\nלהלן פירוט ' + (a.mode === 'all' ? 'החשבונות הפתוחים' : 'החשבונות לתשלום') + ' של ' + a.name + ' (' + a.num + '):\n';
+  rows.forEach(function (r) {
+    var mark = a.mode === 'all' ? (a.sel[a.rows.indexOf(r)] ? '✅ ' : '▫️ ') : '• ';
+    t += mark + r.type + ' ' + _agingDocLabel(r) + ' | ' + _agingMoney(r.open) + ' ₪ | ערך ' + _agingDate(r.valueDate) + '\n';
+  });
+  if (a.mode === 'all') t += '\nסה"כ יתרה: ' + _agingMoney(_agingSum(a.rows)) + ' ₪\n';
+  t += (a.mode === 'all' ? 'מסומן לתשלום: ' : '\nסה"כ: ') + _agingMoney(_agingSum(s)) + ' ₪';
+  var wd = _agingWeightedDate(s); if (wd) t += '\nתאריך משוקלל: ' + _agingDate(wd);
+  t += '\n\nתודה,\nביקונקט טכנולוגיות';
+  return t;
+}
+
+function _agingCheckRows() {
+  if (!_agingSendRows().length) { alert('לא סומנו שורות לשליחה'); return false; }
+  if (_aging.meta && _aging.meta.mode === 'fifo' &&
+      !confirm('⚠️ הנתונים הם חישוב משוער ועלולים להיות שונים ממערכת הגבייה.\nהשווית מול המערכת ואתה בטוח שהם נכונים?')) return false;
+  return true;
+}
+
+function _agingSendWhatsApp() {
+  if (!_aging || !_agingCheckRows()) return;
+  var ph = String((_aging.contact || {}).phone || '').replace(/\D/g, '');
+  if (ph.indexOf('0') === 0) ph = '972' + ph.slice(1);
+  if (!ph) { alert('אין טלפון ללקוח — הוסף בעריכת איש קשר'); return; }
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_agingMessageText()), '_blank');
+}
+
+function _agingSendEmail() {
+  if (!_aging || !_agingCheckRows()) return;
+  var em = (_aging.contact || {}).email || '';
+  if (!em) { alert('אין מייל ללקוח — הוסף בעריכת איש קשר'); return; }
+  location.href = 'mailto:' + encodeURIComponent(em) + '?subject=' + encodeURIComponent('פירוט חשבונות פתוחים — ' + _aging.name) + '&body=' + encodeURIComponent(_agingMessageText());
+}
+
+// PDF של כרטיס הגיול (html2canvas → jsPDF, כמו הצעת המחיר) ושיתוף בחלון השיתוף
+// של הטלפון — משם ישר לוואטסאפ/מייל של הלקוח עם הקובץ מצורף.
+function _agingBuildPdfHolder() {
+  var a = _aging, c = a.contact || {}, rows = _agingSendRows(), s = _agingSelected(), wd = _agingWeightedDate(s);
+  var holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;background:#fff;color:#1d2433;direction:rtl;font-family:Heebo,Arial,sans-serif;padding:28px 30px';
+  var th = 'padding:7px 8px;border-bottom:2px solid #1d2433;font-size:12px;text-align:right';
+  var td = 'padding:7px 8px;border-bottom:1px solid #e1e5ee;font-size:12.5px';
+  var h = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2f6fd6;padding-bottom:10px">' +
+    '<div><div style="font-size:22px;font-weight:900">כרטיס גיול חובות</div><div style="font-size:13px;color:#5a6378">הופק ' + _agingDate(_agingToday()) + '</div></div>' +
+    '<div style="text-align:left"><div style="font-size:20px;font-weight:900;color:#2f6fd6;font-style:italic">BConnect</div><div style="font-size:11px;color:#5a6378">ביקונקט טכנולוגיות בע"מ</div></div></div>';
+  h += '<div style="display:flex;justify-content:space-between;margin:14px 0 10px;font-size:13.5px">' +
+    '<div><b style="font-size:16px">' + _agingEsc(a.name) + '</b><br>מספר לקוח: ' + _agingEsc(a.num) + (c.contact ? '<br>לכבוד: ' + _agingEsc(c.contact) : '') + '</div>' +
+    '<div style="text-align:left">יתרה כוללת: <b dir="ltr">' + _agingMoney(_agingSum(a.rows)) + ' ₪</b><br>באיחור: <b dir="ltr" style="color:#c62828">' + _agingMoney(_agingSum(a.rows.filter(_agingOverdue))) + ' ₪</b></div></div>';
+  if (a.note && a.note.trim()) h += '<div style="background:#fff8d6;border:1px solid #f0d77a;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:10px">' + _agingEsc(a.note.trim()).replace(/\n/g, '<br>') + '</div>';
+  h += '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
+    (a.mode === 'all' ? '<th style="' + th + ';width:22px"></th>' : '') +
+    '<th style="' + th + '">מסמך</th><th style="' + th + '">סוג</th><th style="' + th + '">תאריך מסמך</th><th style="' + th + '">תאריך ערך</th>' +
+    '<th style="' + th + ';text-align:left">סכום מקורי</th><th style="' + th + ';text-align:left">יתרה</th><th style="' + th + '"></th></tr></thead><tbody>';
+  rows.forEach(function (r) {
+    var on = !!a.sel[a.rows.indexOf(r)], od = _agingOverdue(r);
+    var bg = a.mode === 'all' && on ? 'background:#fff3b0;' : '';
+    h += '<tr style="' + bg + '">' + (a.mode === 'all' ? '<td style="' + td + ';font-weight:900;color:#1a7f37">' + (on ? '✓' : '') + '</td>' : '') +
+      '<td style="' + td + ';font-weight:700" dir="ltr">' + _agingEsc(_agingDocLabel(r)) + '</td><td style="' + td + '">' + _agingEsc(r.type) + '</td>' +
+      '<td style="' + td + '">' + (r.docDate ? _agingDate(r.docDate) : '') + '</td><td style="' + td + '">' + _agingDate(r.valueDate) + '</td>' +
+      '<td style="' + td + ';text-align:left" dir="ltr">' + (r.original != null ? _agingMoney(r.original) : '') + '</td>' +
+      '<td style="' + td + ';text-align:left;font-weight:800" dir="ltr">' + _agingMoney(r.open) + '</td>' +
+      '<td style="' + td + '"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + (od ? '#f06262' : '#2ec58a') + '"></span></td></tr>';
+  });
+  h += '</tbody></table>';
+  h += '<div style="display:flex;justify-content:space-between;margin-top:14px;padding:12px 14px;background:#26335f;color:#fff;border-radius:8px;font-size:14px">' +
+    '<span>' + (a.mode === 'all' ? 'סה"כ מסומן לתשלום' : 'סה"כ לתשלום') + ': <b dir="ltr">' + _agingMoney(_agingSum(s)) + ' ₪</b></span>' +
+    (wd ? '<span>תאריך משוקלל: <b>' + _agingDate(wd) + '</b></span>' : '') + '</div>';
+  h += '<div style="margin-top:12px;font-size:11px;color:#6b7387"><span style="color:#f06262">●</span> באיחור &nbsp; <span style="color:#2ec58a">●</span> טרם הגיע מועדו &nbsp;·&nbsp; הנתונים נכונים לעדכון האחרון במערכת' + (a.meta && a.meta.importedAt ? ' (' + _agingEsc(a.meta.importedAt.split(' ')[0]) + ')' : '') + '</div>';
+  holder.innerHTML = h;
+  return holder;
+}
+
+function _agingSharePdf() {
+  if (!_aging || !_agingCheckRows()) return;
+  if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas === 'undefined') { alert('טוען ספריית PDF... נסה שוב בעוד שנייה'); return; }
+  var holder = _agingBuildPdfHolder();
+  document.body.appendChild(holder);
+  html2canvas(holder, {scale: 2, backgroundColor: '#ffffff', logging: false}).then(function (canvas) {
+    holder.remove();
+    var pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+    var pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight(), margin = 8;
+    var imgW = pageW - margin * 2, imgH = canvas.height * imgW / canvas.width, contentH = pageH - margin * 2;
+    var pages = Math.max(1, Math.ceil((imgH - 0.05) / contentH)), img = canvas.toDataURL('image/jpeg', 0.9);
+    for (var pg = 0; pg < pages; pg++) { if (pg) pdf.addPage(); pdf.addImage(img, 'JPEG', margin, margin - pg * contentH, imgW, imgH, 'agimg', 'FAST'); }
+    var fname = 'גיול חובות - ' + String(_aging.name).replace(/[\\/:*?"<>|]/g, '') + ' - ' + _agingDate(_agingToday()).replace(/\//g, '.') + '.pdf';
+    var blob = pdf.output('blob'), file = null;
+    try { file = new File([blob], fname, {type: 'application/pdf'}); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({files: [file]})) {
+      navigator.share({files: [file], title: fname, text: 'פירוט חשבונות פתוחים — ' + _aging.name}).catch(function () {});
+    } else {
+      pdf.save(fname);
+    }
+  }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
+}
+
 </script>
 </body>
 </html
