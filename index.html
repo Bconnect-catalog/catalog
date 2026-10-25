@@ -8978,7 +8978,11 @@ function doExportQuotePDF() {
         pdf.setPage(pg+1);
         pdf.link(margin, yOnPage, imgW, hRow, {url: rm.url});
       });
-      pdf.save('BConnect_Quote_'+(customer||'')+'_'+dateStr+'.pdf');
+      // שם בעברית: pdf.save() מקודד latin1 → ג'יבריש בהורדות; שומרים את ה-blob עם a.download
+      (function(){ var fn='BConnect_Quote_'+(customer||'').replace(/[\/:*?"<>|]/g,'')+'_'+dateStr+'.pdf';
+        var u=URL.createObjectURL(pdf.output('blob')), l=document.createElement('a');
+        l.href=u; l.download=fn; document.body.appendChild(l); l.click(); l.remove();
+        setTimeout(function(){ URL.revokeObjectURL(u); }, 4000); })();
       saveQuote(orderNum);
       closeModal();
       _resetCartAfterSend();
@@ -22160,7 +22164,7 @@ function _agingPeriodOf(r) {
 function _agingWeightedDate(rows) {
   var pos = rows.filter(function (r) { return r.open > 0; }), use = pos.length ? pos : rows;
   var w = 0, t = 0;
-  use.forEach(function (r) { var a = Math.abs(r.open), ms = new Date(r.valueDate + 'T12:00:00').getTime(); if (!isNaN(ms) && a) { w += a; t += a * ms; } });
+  use.forEach(function (r) { var a = Math.abs(r.open), ms = new Date(_agingDue(r) + 'T12:00:00').getTime(); if (!isNaN(ms) && a) { w += a; t += a * ms; } });
   if (!w) return '';
   var d = new Date(Math.round(t / w));
   return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
@@ -22494,12 +22498,28 @@ function _agingMessageText() {
   t += '\nלהלן פירוט ' + (a.mode === 'all' ? 'החשבונות הפתוחים' : 'החשבונות לתשלום') + ' של ' + a.name + ' (' + a.num + '):\n';
   rows.forEach(function (r) {
     var mark = a.mode === 'all' ? (a.sel[a.rows.indexOf(r)] ? '✅ ' : '▫️ ') : '• ';
-    t += mark + r.type + ' ' + _agingDocLabel(r) + ' | ' + _agingMoney(r.open) + ' ₪ | ערך ' + _agingDate(r.valueDate) + '\n';
+    t += mark + r.type + ' ' + _agingDocLabel(r) + ' | ' + _agingMoney(r.open) + ' ₪ | ערך ' + _agingDate(r.valueDate) +
+      (_agingDue(r) !== String(r.valueDate) ? ' | לתשלום ' + _agingDate(_agingDue(r)) : '') + '\n';
   });
   if (a.mode === 'all') t += '\nסה"כ יתרה: ' + _agingMoney(_agingSum(_agingLive(a.rows))) + ' ₪\n';
   t += (a.mode === 'all' ? 'מסומן לתשלום: ' : '\nסה"כ: ') + _agingMoney(_agingSum(s)) + ' ₪';
-  var wd = _agingWeightedDate(s); if (wd) t += '\nתאריך משוקלל: ' + _agingDate(wd);
+  var wd = _agingWeightedDate(s); if (wd) t += '\nמועד תשלום משוקלל: ' + _agingDate(wd);
   t += '\n\nתודה,\nביקונקט טכנולוגיות';
+  return t;
+}
+
+// וואטסאפ: הודעה קצרה וישירה — סכום ומועד בלבד (פירוט מלא נשלח ב-PDF לפי בקשה).
+// הסכום = השורות המסומנות; המועד = מועד התשלום המשוקלל (כולל דחיית גבייה).
+function _agingWaText() {
+  var a = _aging, c = a.contact || {}, s = _agingSelected(), wd = _agingWeightedDate(s);
+  var first = String(c.contact || '').trim().split(/[\s-]/)[0];
+  var au = {}; try { au = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {}
+  var signer = String(a.agent || '').trim() || au.name || au.user || '';
+  var t = 'שלום' + (first ? ' ' + first : '') + ',\n';
+  if (a.note && a.note.trim()) t += a.note.trim() + '\n';
+  t += 'נא לדאוג לתשלום בסך ' + _agingMoney(_agingSum(s)) + ' ₪' + (wd ? ' עד לתאריך ' + _agingDate(wd) : '') + '.\n';
+  if (s.some(_agingOverdue)) t += 'מועד הפירעון חלף, נא להעביר תשלום בהקדם.\n';
+  t += '\nתודה,\n' + signer;
   return t;
 }
 
@@ -22517,10 +22537,11 @@ function _agingCheckRows() {
 
 function _agingSendWhatsApp() {
   if (!_aging || !_agingCheckRows()) return;
+  if (!_agingSelected().length) { alert('סמן את החשבוניות לתשלום — ההודעה כוללת את הסכום שלהן'); return; }
   var ph = String((_aging.contact || {}).phone || '').replace(/\D/g, '');
   if (ph.indexOf('0') === 0) ph = '972' + ph.slice(1);
   if (!ph) { alert('אין טלפון ללקוח — הוסף בעריכת איש קשר'); return; }
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_agingMessageText()), '_blank');
+  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_agingWaText()), '_blank');
 }
 
 function _agingSendEmail() {
@@ -22537,6 +22558,7 @@ function _agingBuildPdfHolder() {
   var holder = document.createElement('div');
   holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;background:#fff;color:#1d2433;direction:rtl;font-family:Heebo,Arial,sans-serif;padding:28px 30px';
   var th = 'padding:7px 8px;border-bottom:2px solid #1d2433;font-size:12px;text-align:right';
+  var shifted = rows.some(function (r) { return _agingDue(r) !== String(r.valueDate); });
   var td = 'padding:7px 8px;border-bottom:1px solid #e1e5ee;font-size:12.5px';
   var h = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #2f6fd6;padding-bottom:10px">' +
     '<div><div style="font-size:22px;font-weight:900">כרטיס גיול חובות</div><div style="font-size:13px;color:#5a6378">הופק ' + _agingDate(_agingToday()) + '</div></div>' +
@@ -22548,6 +22570,7 @@ function _agingBuildPdfHolder() {
   h += '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
     (a.mode === 'all' ? '<th style="' + th + ';width:22px"></th>' : '') +
     '<th style="' + th + '">מסמך</th><th style="' + th + '">סוג</th><th style="' + th + '">תאריך מסמך</th><th style="' + th + '">תאריך ערך</th>' +
+    (shifted ? '<th style="' + th + '">מועד תשלום</th>' : '') +
     '<th style="' + th + ';text-align:left">סכום מקורי</th><th style="' + th + ';text-align:left">יתרה</th><th style="' + th + '"></th></tr></thead><tbody>';
   rows.forEach(function (r) {
     var on = !!a.sel[a.rows.indexOf(r)], od = _agingOverdue(r);
@@ -22555,6 +22578,7 @@ function _agingBuildPdfHolder() {
     h += '<tr style="' + bg + '">' + (a.mode === 'all' ? '<td style="' + td + ';font-weight:900;color:#1a7f37">' + (on ? '✓' : '') + '</td>' : '') +
       '<td style="' + td + ';font-weight:700" dir="ltr">' + _agingEsc(_agingDocLabel(r)) + '</td><td style="' + td + '">' + _agingEsc(r.type) + '</td>' +
       '<td style="' + td + '">' + (r.docDate ? _agingDate(r.docDate) : '') + '</td><td style="' + td + '">' + _agingDate(r.valueDate) + '</td>' +
+      (shifted ? '<td style="' + td + ';font-weight:700">' + _agingDate(_agingDue(r)) + '</td>' : '') +
       '<td style="' + td + ';text-align:left" dir="ltr">' + (r.original != null ? _agingMoney(r.original) : '') + '</td>' +
       '<td style="' + td + ';text-align:left;font-weight:800" dir="ltr">' + _agingMoney(r.open) + '</td>' +
       '<td style="' + td + '"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + (od ? '#f06262' : '#2ec58a') + '"></span></td></tr>';
@@ -22562,10 +22586,17 @@ function _agingBuildPdfHolder() {
   h += '</tbody></table>';
   h += '<div style="display:flex;justify-content:space-between;margin-top:14px;padding:12px 14px;background:#26335f;color:#fff;border-radius:8px;font-size:14px">' +
     '<span>' + (a.mode === 'all' ? 'סה"כ מסומן לתשלום' : 'סה"כ לתשלום') + ': <b dir="ltr">' + _agingMoney(_agingSum(s)) + ' ₪</b></span>' +
-    (wd ? '<span>תאריך משוקלל: <b>' + _agingDate(wd) + '</b></span>' : '') + '</div>';
+    (wd ? '<span>מועד תשלום משוקלל: <b>' + _agingDate(wd) + '</b></span>' : '') + '</div>';
   h += '<div style="margin-top:12px;font-size:11px;color:#6b7387"><span style="color:#f06262">●</span> באיחור &nbsp; <span style="color:#2ec58a">●</span> טרם הגיע מועדו &nbsp;·&nbsp; הנתונים נכונים לעדכון האחרון במערכת' + (a.meta && a.meta.importedAt ? ' (' + _agingEsc(a.meta.importedAt.split(' ')[0]) + ')' : '') + '</div>';
   holder.innerHTML = h;
   return holder;
+}
+
+// הורדה עם שם בעברית — pdf.save() של jsPDF מקודד את השם כ-latin1 ויוצא ג'יבריש
+function _agingSaveBlob(blob, fname) {
+  var url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
 }
 
 function _agingSharePdf() {
@@ -22586,7 +22617,7 @@ function _agingSharePdf() {
     if (file && navigator.canShare && navigator.canShare({files: [file]})) {
       navigator.share({files: [file], title: fname, text: 'פירוט חשבונות פתוחים — ' + _aging.name}).catch(function () {});
     } else {
-      pdf.save(fname);
+      _agingSaveBlob(blob, fname);
     }
   }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
 }
@@ -22834,7 +22865,7 @@ function _agingShareReceiptPdf(col) {
       var blob = pdf.output('blob'), file = null;
       try { file = new File([blob], fname, {type: 'application/pdf'}); } catch (e) {}
       if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: fname, text: 'אישור מסירת תשלום לסוכן'}).catch(function () {});
-      else pdf.save(fname);
+      else _agingSaveBlob(blob, fname);
     }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
   });
 }
