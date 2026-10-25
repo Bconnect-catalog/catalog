@@ -22516,9 +22516,9 @@ function _agingWaText() {
   var au = {}; try { au = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {}
   var signer = String(a.agent || '').trim() || au.name || au.user || '';
   var t = 'שלום' + (first ? ' ' + first : '') + ',\n';
-  if (a.note && a.note.trim()) t += a.note.trim() + '\n';
   t += 'נא לדאוג לתשלום בסך ' + _agingMoney(_agingSum(s)) + ' ₪' + (wd ? ' עד לתאריך ' + _agingDate(wd) : '') + '.\n';
   if (s.some(_agingOverdue)) t += 'מועד הפירעון חלף, נא להעביר תשלום בהקדם.\n';
+  if (a.note && a.note.trim()) t += '\nהערת סוכן: ' + a.note.trim() + '\n';
   t += '\nתודה,\n' + signer;
   return t;
 }
@@ -22593,6 +22593,12 @@ function _agingBuildPdfHolder() {
 }
 
 // הורדה עם שם בעברית — pdf.save() של jsPDF מקודד את השם כ-latin1 ויוצא ג'יבריש
+// חלון השיתוף של Windows (→ וואטסאפ דסקטופ) משבש שם קובץ בעברית (UTF-8 שנקרא כ-latin1) —
+// בשיתוף מ-Windows השם באנגלית; בטלפון ובהורדה נשאר בעברית
+function _agingShareName(fname, kind, num, iso) {
+  if (!/Windows/i.test(navigator.userAgent || '')) return fname;
+  return 'BConnect_' + kind + '_' + String(num || '').replace(/\D/g, '') + '_' + _agingDate(iso).replace(/\//g, '.') + '.pdf';
+}
 function _agingSaveBlob(blob, fname) {
   var url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = fname; document.body.appendChild(a); a.click(); a.remove();
@@ -22613,7 +22619,7 @@ function _agingSharePdf() {
     for (var pg = 0; pg < pages; pg++) { if (pg) pdf.addPage(); pdf.addImage(img, 'JPEG', margin, margin - pg * contentH, imgW, imgH, 'agimg', 'FAST'); }
     var fname = 'גיול חובות - ' + String(_aging.name).replace(/[\\/:*?"<>|]/g, '') + ' - ' + _agingDate(_agingToday()).replace(/\//g, '.') + '.pdf';
     var blob = pdf.output('blob'), file = null;
-    try { file = new File([blob], fname, {type: 'application/pdf'}); } catch (e) {}
+    try { file = new File([blob], _agingShareName(fname, 'Aging', _aging.num, _agingToday()), {type: 'application/pdf'}); } catch (e) {}
     if (file && navigator.canShare && navigator.canShare({files: [file]})) {
       navigator.share({files: [file], title: fname, text: 'פירוט חשבונות פתוחים — ' + _aging.name}).catch(function () {});
     } else {
@@ -22863,7 +22869,7 @@ function _agingShareReceiptPdf(col) {
       for (var pg = 0; pg < pages; pg++) { if (pg) pdf.addPage(); pdf.addImage(im, 'JPEG', m, m - pg * ch, w, hh, 'rcimg', 'FAST'); }
       var fname = 'אישור מסירת תשלום - ' + String(col.name || '').replace(/[\\/:*?"<>|]/g, '') + ' - ' + _agingDate(String(col.createdAt).split(' ')[0]).replace(/\//g, '.') + '.pdf';
       var blob = pdf.output('blob'), file = null;
-      try { file = new File([blob], fname, {type: 'application/pdf'}); } catch (e) {}
+      try { file = new File([blob], _agingShareName(fname, 'Payment', col.num, String(col.createdAt).split(' ')[0]), {type: 'application/pdf'}); } catch (e) {}
       if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: fname, text: 'אישור מסירת תשלום לסוכן'}).catch(function () {});
       else _agingSaveBlob(blob, fname);
     }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
