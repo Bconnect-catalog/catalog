@@ -22159,15 +22159,56 @@ function _agingPeriodOf(r) {
   if (d <= 0) return 'Current';
   return d <= 30 ? '0 - 30' : d <= 60 ? '31 - 60' : d <= 90 ? '61 - 90' : d <= 120 ? '91 - 120' : '121 +';
 }
-// תאריך משוקלל של השורות המסומנות — ממוצע תאריכי הערך של החיובים לפי סכום
-// (כמו באפליקציית הגבייה: 365606+366138 ← 15/08/26). אין חיובים → לפי ערך מוחלט.
+// תוכנית התשלום של השורות המסומנות: הזיכויים (והתקבולים) מקוזזים קודם מהחיובים הוותיקים —
+// חשבונית שזיכוי סוגר (דקל: 365412 מול זיכוי 291416) לא מושכת את המועד אחורה ולא נחשבת חריגה.
+// מה שנשאר = התשלומים בפועל, מקובצים לפי מועד התשלום (תאריך ערך + דחיית גבייה).
+function _agingPayPlan(rows) {
+  var deb = rows.filter(function (r) { return r.open > 0; }).sort(function (x, y) { return _agingDue(x) < _agingDue(y) ? -1 : _agingDue(x) > _agingDue(y) ? 1 : 0; });
+  var cred = -rows.reduce(function (t, r) { return t + (r.open < 0 ? Number(r.open) : 0); }, 0), by = {}, out = [];
+  deb.forEach(function (r) {
+    var amt = Number(r.open) || 0, take = Math.min(cred, amt);
+    amt -= take; cred -= take;
+    if (amt > 0.005) by[_agingDue(r)] = (by[_agingDue(r)] || 0) + amt;
+  });
+  Object.keys(by).sort().forEach(function (d) { out.push({date: d, amt: Math.round(by[d] * 100) / 100}); });
+  return out;
+}
+// מועד משוקלל — רק על היתרה אחרי הקיזוז
 function _agingWeightedDate(rows) {
-  var pos = rows.filter(function (r) { return r.open > 0; }), use = pos.length ? pos : rows;
   var w = 0, t = 0;
-  use.forEach(function (r) { var a = Math.abs(r.open), ms = new Date(_agingDue(r) + 'T12:00:00').getTime(); if (!isNaN(ms) && a) { w += a; t += a * ms; } });
+  _agingPayPlan(rows).forEach(function (g) { var ms = new Date(g.date + 'T12:00:00').getTime(); if (!isNaN(ms)) { w += g.amt; t += g.amt * ms; } });
   if (!w) return '';
-  var d = new Date(Math.round(t / w));
-  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  return _agingIso(new Date(Math.round(t / w)));
+}
+function _agingPlanLate(plan) { var td = _agingToday(); return plan.some(function (g) { return g.date < td; }); }
+// כמה מועדים אחרי הקיזוז → הסוכן בוחר: תשלום אחד במועד משוקלל, או פיצול לפי המועדים
+function _agingSplit() { return !!_aging && _aging.payMode === 'split' && _agingPayPlan(_agingSelected()).length > 1; }
+function _agingSetPayMode(m) { if (!_aging) return; _aging.payMode = m; _agingRenderFoot(); }
+// לפני שליחה: אם יש כמה מועדים ועוד לא נבחר אופן — שואלים, ואז ממשיכים
+function _agingAskPayMode(cont) {
+  if (!_aging || _aging.payMode || _agingPayPlan(_agingSelected()).length < 2) return true;
+  var plan = _agingPayPlan(_agingSelected()), wd = _agingWeightedDate(_agingSelected());
+  var o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;direction:rtl';
+  var b = 'display:block;width:100%;padding:11px;border-radius:10px;border:none;font-weight:800;font-size:.9rem;cursor:pointer;margin-top:8px;color:#fff';
+  o.innerHTML = '<div style="background:#141a2e;border:1px solid #2c3658;border-radius:14px;padding:16px;width:min(340px,92vw);color:#dfe6fb;font-family:inherit">' +
+    '<div style="font-weight:900;margin-bottom:8px">החשבוניות המסומנות לתשלום בכמה מועדים</div>' +
+    plan.map(function (g) { return '<div style="display:flex;justify-content:space-between;font-size:.84rem;padding:2px 0"><span>עד ' + _agingDate(g.date) + '</span><b dir="ltr">' + _agingMoney(g.amt) + ' ₪</b></div>'; }).join('') +
+    '<button data-m="weighted" style="' + b + ';background:#3a6fd8">תשלום אחד — מועד משוקלל ' + _agingDate(wd) + '</button>' +
+    '<button data-m="split" style="' + b + ';background:#7b52d6">' + plan.length + ' תשלומים לפי המועדים</button>' +
+    '<button data-m="" style="' + b + ';background:none;border:1px solid #3d4b78;color:#c7d0ea">ביטול</button></div>';
+  o.onclick = function (ev) {
+    var m = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-m');
+    if (m === null || m === undefined) { if (ev.target === o) o.remove(); return; }
+    o.remove();
+    if (m) { _agingSetPayMode(m); cont(); }
+  };
+  document.body.appendChild(o);
+  return false;
+}
+// שורות טקסט של תוכנית התשלום — להודעות
+function _agingPlanLines(rows) {
+  return _agingPayPlan(rows).map(function (g) { return '• ' + _agingMoney(g.amt) + ' ₪ עד ' + _agingDate(g.date); }).join('\n');
 }
 function _agingSelected() { return _aging ? _aging.rows.filter(function (r, i) { return _aging.sel[i]; }) : []; }
 
@@ -22260,6 +22301,7 @@ function _agingRenderPicker() {
   var body = document.getElementById('agingBody'); if (!body) return;
   document.getElementById('agingFoot').innerHTML = '';
   body.innerHTML = '<div style="padding:14px 16px">' +
+    '<button onclick="_agingOpenCollected()" style="width:100%;margin-bottom:10px;padding:10px;border-radius:12px;border:1px solid #2ec58a;background:#123323;color:#b9f3d6;font-weight:800;font-size:.9rem;cursor:pointer">💵 גבייה בפועל — החודש</button>' +
     '<input id="agingSearch" placeholder="חפש לקוח לפי שם או מספר..." autocomplete="off" oninput="_agingFilterPicker()" ' +
     'style="width:100%;box-sizing:border-box;padding:11px 14px;border-radius:12px;border:1px solid #3d4b78;background:#0d1224;color:#fff;font-size:.92rem;outline:none">' +
     '<div id="agingPickList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"><div style="color:#8792b3;text-align:center;padding:20px">טוען...</div></div></div>';
@@ -22443,7 +22485,14 @@ function _agingRenderFoot() {
   var btn = 'flex:1;padding:10px 6px;border-radius:10px;border:none;font-weight:800;font-size:.85rem;cursor:pointer;color:#fff';
   f.innerHTML = '<div style="background:#26335f;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">' +
       '<div><div style="font-size:.86rem">סכום כולל: <b style="direction:ltr;unicode-bidi:embed;font-size:1.02rem">' + _agingMoney(_agingSum(s)) + '</b></div>' +
-      '<div style="font-size:.82rem;color:#c7d0ea">תאריך משוקלל: <b>' + (wd ? _agingDate(wd) : '—') + '</b></div></div>' +
+      (function () {
+        var plan = _agingPayPlan(s);
+        if (plan.length < 2) return '<div style="font-size:.82rem;color:#c7d0ea">מועד תשלום: <b>' + (wd ? _agingDate(wd) : '—') + '</b></div>';
+        var pill = function (m, label) { var on = _aging.payMode === m; return '<button onclick="_agingSetPayMode(\'' + m + '\')" style="padding:2px 9px;border-radius:999px;font-size:.72rem;cursor:pointer;border:1px solid ' + (on ? '#9fb4ea' : '#3d4b78') + ';background:' + (on ? '#3a4f8f' : 'none') + ';color:#dfe6fb">' + label + '</button>'; };
+        return '<div style="font-size:.8rem;color:#c7d0ea;margin-top:2px;display:flex;gap:5px;align-items:center;flex-wrap:wrap">' +
+          pill('weighted', 'משוקלל ' + _agingDate(wd)) + pill('split', plan.length + ' תשלומים') + '</div>' +
+          (_aging.payMode === 'split' ? '<div style="font-size:.74rem;color:#9fb0dd;margin-top:2px">' + plan.map(function (g) { return _agingMoney(g.amt) + ' עד ' + _agingDate(g.date); }).join(' · ') + '</div>' : '');
+      })() + '</div>' +
       '<div style="font-size:.78rem;color:#9fb0dd">' + s.length + ' מסומנות</div></div>' +
     '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
       '<button onclick="_agingSendWhatsApp()" style="' + btn + ';background:#1fa855">💬 וואטסאפ</button>' +
@@ -22468,7 +22517,10 @@ function _agingEditContact() {
         '<span style="font-size:.7rem;color:#6f7aa0">ריק = לפי הדוח</span></div>' +
         '<div style="display:flex;gap:8px;align-items:center;margin-top:5px"><span style="font-size:.8rem;color:#c7d0ea;white-space:nowrap">דחיית גבייה +</span>' +
         '<input id="agC_grace" inputmode="numeric" placeholder="0" value="' + _agingEsc(c.graceDays) + '" style="' + inp + ';margin-top:0;width:110px;direction:ltr;text-align:right">' +
-        '<span style="font-size:.7rem;color:#6f7aa0">ימים אחרי תאריך הערך (חריגה רק אחריהם)</span></div>';
+        '<span style="font-size:.7rem;color:#6f7aa0">ימים אחרי תאריך הערך (חריגה רק אחריהם)</span></div>' +
+        '<select id="agC_novat" style="' + inp + '">' +
+          [['', 'מע"מ — אוטומטי (ללא מע"מ אם "אילת" בשם)'], ['כן', 'לקוח אילת — ללא מע"מ'], ['לא', 'כולל מע"מ']].map(function (o) {
+            return '<option value="' + o[0] + '"' + ((c.noVatFlag || '') === o[0] ? ' selected' : '') + '>' + _agingEsc(o[1]) + '</option>'; }).join('') + '</select>';
     })() +
     '<select id="agC_pay" style="' + inp + '"><option value="">תנאי תשלום — לבחירה</option>' +
       _AGING_PAY_METHODS.map(function (m) { return '<option' + (c.payMethod === m ? ' selected' : '') + '>' + _agingEsc(m) + '</option>'; }).join('') + '</select>' +
@@ -22480,7 +22532,7 @@ function _agingSaveContact() {
   if (!_aging) return;
   var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); };
   var params = {cust: _aging.num, contact: g('agC_contact'), phone: g('agC_phone'), email: g('agC_email'), address: (_aging.contact || {}).address || '',
-                creditDays: g('agC_credit').replace(/\D/g, ''), payMethod: g('agC_pay'), graceDays: g('agC_grace').replace(/\D/g, '')};
+                creditDays: g('agC_credit').replace(/\D/g, ''), payMethod: g('agC_pay'), graceDays: g('agC_grace').replace(/\D/g, ''), noVat: g('agC_novat')};
   _agingApi('saveAgingContact', params).then(function (d) {
     if (d && d.ok) { _aging.contact = d.contact || params; _agingSetGrace(_aging.rows, _aging.contact.graceDays); _agingRender(); }
     else alert('השמירה נכשלה' + (d && d.error ? ': ' + d.error : ''));
@@ -22503,7 +22555,8 @@ function _agingMessageText() {
   });
   if (a.mode === 'all') t += '\nסה"כ יתרה: ' + _agingMoney(_agingSum(_agingLive(a.rows))) + ' ₪\n';
   t += (a.mode === 'all' ? 'מסומן לתשלום: ' : '\nסה"כ: ') + _agingMoney(_agingSum(s)) + ' ₪';
-  var wd = _agingWeightedDate(s); if (wd) t += '\nמועד תשלום משוקלל: ' + _agingDate(wd);
+  if (_agingSplit()) t += '\nלפי מועדים:\n' + _agingPlanLines(s);
+  else { var wd = _agingWeightedDate(s); if (wd) t += '\nמועד תשלום: ' + _agingDate(wd); }
   t += '\n\nתודה,\nביקונקט טכנולוגיות';
   return t;
 }
@@ -22516,8 +22569,9 @@ function _agingWaText() {
   var au = {}; try { au = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {}
   var signer = String(a.agent || '').trim() || au.name || au.user || '';
   var t = 'שלום' + (first ? ' ' + first : '') + ',\n';
-  t += 'נא לדאוג לתשלום בסך ' + _agingMoney(_agingSum(s)) + ' ₪' + (wd ? ' עד לתאריך ' + _agingDate(wd) : '') + '.\n';
-  if (s.some(_agingOverdue)) t += 'מועד הפירעון חלף, נא להעביר תשלום בהקדם.\n';
+  if (_agingSplit()) t += 'נא לדאוג לתשלומים הבאים:\n' + _agingPlanLines(s) + '\n';
+  else t += 'נא לדאוג לתשלום בסך ' + _agingMoney(_agingSum(s)) + ' ₪' + (wd ? ' עד לתאריך ' + _agingDate(wd) : '') + '.\n';
+  if (_agingPlanLate(_agingPayPlan(s))) t += 'מועד הפירעון חלף, נא להעביר תשלום בהקדם.\n';
   if (a.note && a.note.trim()) t += '\nהערת סוכן: ' + a.note.trim() + '\n';
   t += '\nתודה,\n' + signer;
   return t;
@@ -22538,6 +22592,7 @@ function _agingCheckRows() {
 function _agingSendWhatsApp() {
   if (!_aging || !_agingCheckRows()) return;
   if (!_agingSelected().length) { alert('סמן את החשבוניות לתשלום — ההודעה כוללת את הסכום שלהן'); return; }
+  if (!_agingAskPayMode(_agingSendWhatsApp)) return;
   var ph = String((_aging.contact || {}).phone || '').replace(/\D/g, '');
   if (ph.indexOf('0') === 0) ph = '972' + ph.slice(1);
   if (!ph) { alert('אין טלפון ללקוח — הוסף בעריכת איש קשר'); return; }
@@ -22546,6 +22601,7 @@ function _agingSendWhatsApp() {
 
 function _agingSendEmail() {
   if (!_aging || !_agingCheckRows()) return;
+  if (!_agingAskPayMode(_agingSendEmail)) return;
   var em = (_aging.contact || {}).email || '';
   if (!em) { alert('אין מייל ללקוח — הוסף בעריכת איש קשר'); return; }
   location.href = 'mailto:' + encodeURIComponent(em) + '?subject=' + encodeURIComponent('פירוט חשבונות פתוחים — ' + _aging.name) + '&body=' + encodeURIComponent(_agingMessageText());
@@ -22586,7 +22642,8 @@ function _agingBuildPdfHolder() {
   h += '</tbody></table>';
   h += '<div style="display:flex;justify-content:space-between;margin-top:14px;padding:12px 14px;background:#26335f;color:#fff;border-radius:8px;font-size:14px">' +
     '<span>' + (a.mode === 'all' ? 'סה"כ מסומן לתשלום' : 'סה"כ לתשלום') + ': <b dir="ltr">' + _agingMoney(_agingSum(s)) + ' ₪</b></span>' +
-    (wd ? '<span>מועד תשלום משוקלל: <b>' + _agingDate(wd) + '</b></span>' : '') + '</div>';
+    (_agingSplit() ? '<span>' + _agingPayPlan(s).map(function (g) { return '<b dir="ltr">' + _agingMoney(g.amt) + ' ₪</b> עד <b>' + _agingDate(g.date) + '</b>'; }).join(' &nbsp;·&nbsp; ') + '</span>'
+      : (wd ? '<span>מועד תשלום: <b>' + _agingDate(wd) + '</b></span>' : '')) + '</div>';
   h += '<div style="margin-top:12px;font-size:11px;color:#6b7387"><span style="color:#f06262">●</span> באיחור &nbsp; <span style="color:#2ec58a">●</span> טרם הגיע מועדו &nbsp;·&nbsp; הנתונים נכונים לעדכון האחרון במערכת' + (a.meta && a.meta.importedAt ? ' (' + _agingEsc(a.meta.importedAt.split(' ')[0]) + ')' : '') + '</div>';
   holder.innerHTML = h;
   return holder;
@@ -22608,6 +22665,7 @@ function _agingSaveBlob(blob, fname) {
 function _agingSharePdf() {
   if (!_aging || !_agingCheckRows()) return;
   if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas === 'undefined') { alert('טוען ספריית PDF... נסה שוב בעוד שנייה'); return; }
+  if (!_agingAskPayMode(_agingSharePdf)) return;
   var holder = _agingBuildPdfHolder();
   document.body.appendChild(holder);
   html2canvas(holder, {scale: 2, backgroundColor: '#ffffff', logging: false}).then(function (canvas) {
@@ -22625,6 +22683,138 @@ function _agingSharePdf() {
     } else {
       _agingSaveBlob(blob, fname);
     }
+  }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
+}
+
+// ── גבייה בפועל (26/10/26) ──────────────────────────────────────────
+// הסוכן מקבל עמלה על הגבייה: כמה נגבה החודש, לקוח-לקוח, תשלום-תשלום.
+// מקורות: קבלות מהדוח (לפי תאריך קבלה — כמו הנה"ח) + גביות שהסוכן רשם בקטלוג.
+// גבייה שנמצאה לה קבלה = "אומתה"; בלי קבלה עדיין = "ממתינה לאימות" (נספרת, מסומנת).
+// עמלה על סכום לפני מע"מ: רגיל ÷ 1.18; לקוחות אילת — החשבונית בלי מע"מ, אין מה לקזז.
+var _coll = null;
+function _agingMonthAdd(m, k) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1 + k; var d = new Date(y, mo, 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+function _agingMonthName(m) { return ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'][+m.slice(5, 7) - 1] + ' ' + m.slice(0, 4); }
+function _agingOpenCollected(month) {
+  var body = document.getElementById('agingBody'); if (!body) return;
+  month = month || _agingToday().slice(0, 7);
+  _coll = {month: month, agent: _coll ? _coll.agent : '', data: null};
+  document.getElementById('agingFoot').innerHTML = '';
+  body.innerHTML = '<div style="color:#8792b3;text-align:center;padding:40px">טוען גבייה...</div>';
+  _agingApi('getCollected', {month: month}).then(function (d) {
+    if (!_coll || _coll.month !== month) return;
+    if (!d || !d.ok) { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">לא ניתן לטעון</div>'; return; }
+    _coll.data = d; _agingRenderCollected();
+  }).catch(function () { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">שגיאת תקשורת</div>'; });
+}
+function _agingCollCalc() {
+  var d = _coll.data, vat = 1 + (Number(d.vat) || 0.18), by = {};
+  (d.lines || []).forEach(function (l) {
+    var c = d.customers[l.num] || {};
+    if (_coll.agent && String(c.agent || '').trim() !== _coll.agent) return;
+    (by[l.num] = by[l.num] || {num: l.num, name: c.name || l.num, agent: c.agent || '', noVat: !!c.noVat, lines: [], total: 0}).lines.push(l);
+    by[l.num].total += Number(l.amount) || 0;
+  });
+  var list = Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.total - a.total; });
+  var sum = function (arr, f) { return Math.round(arr.reduce(function (t, c) { return t + c.lines.filter(f || function () { return true; }).reduce(function (u, l) { return u + (Number(l.amount) || 0); }, 0); }, 0) * 100) / 100; };
+  var reg = list.filter(function (c) { return !c.noVat; }), eil = list.filter(function (c) { return c.noVat; });
+  var regGross = sum(reg), eilGross = sum(eil), regNet = Math.round(regGross / vat * 100) / 100;
+  return {list: list, reg: reg, eil: eil, regGross: regGross, regNet: regNet, eilGross: eilGross, base: Math.round((regNet + eilGross) * 100) / 100,
+          pending: sum(list, function (l) { return l.src === 'agent'; }), estimated: sum(list, function (l) { return l.src !== 'agent' && l.dateSrc === 'משוער'; })};
+}
+function _agingCollBadge(l) {
+  if (l.src === 'agent') return '<span style="color:#ffd27a">⏳ דווח ע״י הסוכן' + (l.method ? ' · ' + _agingEsc(l.method) : '') + ' · ממתין לאימות</span>';
+  var t = (l.src === 'both' ? '<span style="color:#5fd38d">✓ אומת</span> · ' : '') + 'קבלה ' + _agingEsc(l.receiptNo);
+  if (l.dateSrc === 'משוער') t += ' · <span style="color:#ffb74d">≈ תאריך משוער</span>';
+  return t;
+}
+function _agingRenderCollected() {
+  var body = document.getElementById('agingBody'); if (!body || !_coll || !_coll.data) return;
+  var d = _coll.data, k = _agingCollCalc(), m = _coll.month;
+  var agents = {}; Object.keys(d.customers || {}).forEach(function (n) { var a = String(d.customers[n].agent || '').trim(); if (a) agents[a] = 1; });
+  var nav = 'background:#26335f;border:none;color:#dfe6fb;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.9rem';
+  var h = '<div style="padding:12px 16px 4px">' +
+    '<button onclick="_agingRenderPicker()" style="background:none;border:none;color:#7fb2ff;font-size:.8rem;cursor:pointer;padding:0">→ חזרה לגיול</button>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">' +
+      '<button onclick="_agingOpenCollected(\'' + _agingMonthAdd(m, -1) + '\')" style="' + nav + '">‹ קודם</button>' +
+      '<div style="font-weight:900;font-size:1.05rem">💵 גבייה בפועל · ' + _agingMonthName(m) + '</div>' +
+      '<button onclick="_agingOpenCollected(\'' + _agingMonthAdd(m, 1) + '\')" style="' + nav + '">הבא ›</button></div>' +
+    (Object.keys(agents).length > 1 ? '<select onchange="_coll.agent=this.value;_agingRenderCollected()" style="margin-top:8px;width:100%;padding:7px 10px;border-radius:8px;border:1px solid #3d4b78;background:#0d1224;color:#fff">' +
+      '<option value="">כל הסוכנים</option>' + Object.keys(agents).sort().map(function (a) { return '<option' + (_coll.agent === a ? ' selected' : '') + '>' + _agingEsc(a) + '</option>'; }).join('') + '</select>' : '') +
+    '</div>';
+  var card = function (label, val, color, bg, border) { return '<div style="flex:1;min-width:46%;background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:8px 10px"><div style="font-size:.7rem;color:' + color + '">' + label + '</div><div dir="ltr" style="text-align:right;font-weight:900;font-size:1rem">' + _agingMoney(val) + '</div></div>'; };
+  h += '<div style="display:flex;flex-wrap:wrap;gap:8px;padding:6px 16px">' +
+    card('נגבה כולל מע״מ', k.regGross, '#9fc3f0', '#16304a', '#2f6fd6') +
+    card('לפני מע״מ (÷ ' + (1 + (Number(d.vat) || 0.18)).toFixed(2) + ')', k.regNet, '#9fc3f0', '#16304a', '#2f6fd6') +
+    card('אילת — ללא מע״מ', k.eilGross, '#ffd27a', '#3a2a0c', '#b8861b') +
+    card('בסיס לעמלה (ללא מע״מ)', k.base, '#b9f3d6', '#123323', '#2ec58a') + '</div>';
+  if (k.pending || k.estimated) h += '<div style="margin:2px 16px 6px;font-size:.74rem;color:#c7d0ea;line-height:1.5">' +
+    (k.pending ? '⏳ מתוכם <b dir="ltr">' + _agingMoney(k.pending) + '</b> דווחו ע״י הסוכן וממתינים לאימות מול הדוח' : '') +
+    (k.pending && k.estimated ? '<br>' : '') +
+    (k.estimated ? '≈ <b dir="ltr">' + _agingMoney(k.estimated) + '</b> עם תאריך קבלה משוער (אין עדיין "תאריך אסמכתא" בדוח) — ייתכן שיוך לחודש סמוך' : '') + '</div>';
+  var sec = function (title, arr, color) {
+    if (!arr.length) return '';
+    return '<div style="margin:10px 16px 4px;font-weight:900;color:' + color + '">' + title + ' (' + arr.length + ')</div>' + arr.map(function (c) {
+      return '<div style="margin:0 10px 8px;background:#1b2340;border:1px solid #2c3658;border-radius:12px;overflow:hidden">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#202a4b"><span><b>' + _agingEsc(c.name) + '</b> <span style="color:#8792b3;font-size:.74rem">' + _agingEsc(c.num) + '</span></span><b dir="ltr">' + _agingMoney(c.total) + '</b></div>' +
+        c.lines.map(function (l) {
+          return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 12px;border-top:1px solid #26304d;font-size:.8rem">' +
+            '<span>' + _agingDate(l.date) + (l.valueDate ? ' <span style="color:#8792b3">· ערך ' + _agingDate(l.valueDate) + '</span>' : '') +
+            '<br><span style="font-size:.7rem;color:#9fb0dd">' + _agingCollBadge(l) + '</span></span><b dir="ltr" style="white-space:nowrap">' + _agingMoney(l.amount) + '</b></div>';
+        }).join('') + '</div>';
+    }).join('');
+  };
+  if (!k.list.length) h += '<div style="color:#8792b3;text-align:center;padding:24px">אין גבייה רשומה ל' + _agingMonthName(m) + '</div>';
+  h += sec('לקוחות — כולל מע״מ', k.reg, '#9fc3f0') + sec('לקוחות אילת — ללא מע״מ', k.eil, '#ffd27a');
+  h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; גבייה שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה</div>';
+  body.innerHTML = h;
+  document.getElementById('agingFoot').innerHTML = '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
+    '<button onclick="_agingCollectedPdf()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 PDF / שיתוף</button></div>';
+}
+function _agingCollectedPdf() {
+  if (!_coll || !_coll.data) return;
+  if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas === 'undefined') { alert('טוען ספריית PDF... נסה שוב בעוד שנייה'); return; }
+  var k = _agingCollCalc(), m = _coll.month, d = _coll.data;
+  var holder = document.createElement('div');
+  holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:760px;background:#fff;color:#1d2433;direction:rtl;font-family:Heebo,Arial,sans-serif;padding:28px 30px';
+  var td = 'padding:5px 8px;border-bottom:1px solid #e1e5ee;font-size:12px';
+  var h = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1a9a5c;padding-bottom:10px">' +
+    '<div><div style="font-size:22px;font-weight:900">גבייה בפועל — ' + _agingMonthName(m) + '</div><div style="font-size:13px;color:#5a6378">' + (_coll.agent ? 'סוכן: ' + _agingEsc(_coll.agent) + ' · ' : '') + 'הופק ' + _agingDate(_agingToday()) + '</div></div>' +
+    '<div style="text-align:left"><div style="font-size:20px;font-weight:900;color:#2f6fd6;font-style:italic">BConnect</div></div></div>';
+  var block = function (title, arr) {
+    if (!arr.length) return '';
+    var t = '<div style="margin-top:14px;font-size:14px;font-weight:900">' + title + '</div><table style="width:100%;border-collapse:collapse;margin-top:4px">' +
+      '<tr><th style="' + td + ';text-align:right">תאריך</th><th style="' + td + ';text-align:right">תאריך ערך</th><th style="' + td + ';text-align:right">פרטים</th><th style="' + td + ';text-align:left">סכום</th></tr>';
+    arr.forEach(function (c) {
+      t += '<tr style="background:#eef2fa"><td colspan="3" style="' + td + ';font-weight:800">' + _agingEsc(c.name) + ' · ' + _agingEsc(c.num) + '</td><td style="' + td + ';text-align:left;font-weight:800" dir="ltr">' + _agingMoney(c.total) + '</td></tr>';
+      c.lines.forEach(function (l) {
+        t += '<tr><td style="' + td + '">' + _agingDate(l.date) + '</td><td style="' + td + '">' + (l.valueDate ? _agingDate(l.valueDate) : '') + '</td><td style="' + td + '">' +
+          (l.src === 'agent' ? 'דווח ע״י הסוכן — ממתין לאימות' : (l.src === 'both' ? '✓ ' : '') + 'קבלה ' + _agingEsc(l.receiptNo) + (l.dateSrc === 'משוער' ? ' (תאריך משוער)' : '')) +
+          '</td><td style="' + td + ';text-align:left" dir="ltr">' + _agingMoney(l.amount) + '</td></tr>';
+      });
+    });
+    return t + '</table>';
+  };
+  h += block('לקוחות — כולל מע״מ', k.reg) + block('לקוחות אילת — ללא מע״מ', k.eil);
+  h += '<table style="margin-top:16px;width:100%;border-collapse:collapse;font-size:13.5px">' +
+    '<tr><td style="padding:5px 8px">סה״כ כולל מע״מ</td><td dir="ltr" style="padding:5px 8px;text-align:left">' + _agingMoney(k.regGross) + '</td></tr>' +
+    '<tr><td style="padding:5px 8px">לפני מע״מ</td><td dir="ltr" style="padding:5px 8px;text-align:left">' + _agingMoney(k.regNet) + '</td></tr>' +
+    '<tr><td style="padding:5px 8px">אילת (ללא מע״מ)</td><td dir="ltr" style="padding:5px 8px;text-align:left">' + _agingMoney(k.eilGross) + '</td></tr>' +
+    '<tr style="background:#123323;color:#fff;font-weight:900"><td style="padding:8px">בסיס לעמלה (ללא מע״מ)</td><td dir="ltr" style="padding:8px;text-align:left">' + _agingMoney(k.base) + '</td></tr></table>';
+  if (k.pending || k.estimated) h += '<div style="margin-top:8px;font-size:11px;color:#6b7387">' + (k.pending ? 'ממתין לאימות: ' + _agingMoney(k.pending) + ' ₪. ' : '') + (k.estimated ? 'תאריך קבלה משוער: ' + _agingMoney(k.estimated) + ' ₪.' : '') + '</div>';
+  holder.innerHTML = h;
+  document.body.appendChild(holder);
+  html2canvas(holder, {scale: 2, backgroundColor: '#ffffff', logging: false}).then(function (canvas) {
+    holder.remove();
+    var pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+    var pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight(), margin = 8;
+    var imgW = pageW - margin * 2, imgH = canvas.height * imgW / canvas.width, contentH = pageH - margin * 2;
+    var pages = Math.max(1, Math.ceil((imgH - 0.05) / contentH)), img = canvas.toDataURL('image/jpeg', 0.9);
+    for (var pg = 0; pg < pages; pg++) { if (pg) pdf.addPage(); pdf.addImage(img, 'JPEG', margin, margin - pg * contentH, imgW, imgH, 'colimg', 'FAST'); }
+    var fname = 'גבייה בפועל - ' + _agingMonthName(m) + (_coll.agent ? ' - ' + _coll.agent : '') + '.pdf';
+    var blob = pdf.output('blob'), file = null;
+    try { file = new File([blob], /Windows/i.test(navigator.userAgent || '') ? 'BConnect_Collected_' + m + '.pdf' : fname, {type: 'application/pdf'}); } catch (e) {}
+    if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: fname}).catch(function () {});
+    else _agingSaveBlob(blob, fname);
   }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
 }
 
@@ -22678,7 +22868,7 @@ function _agingShowOrderAlert(x) {
 // הסוכן מסמן בכרטיס את החשבוניות ששולמו → רושם אמצעי תשלום (סכום, תאריך פירעון,
 // מס' צ'ק/אסמכתא, צילום או קובץ) → שמירה בשרת + מייל להנה"ח (Aging.gs saveCollection)
 // → אישור מסירת תשלום ללקוח בוואטסאפ. עדכון הסוכן גובר על הדוח עד שהנה"ח קולטת.
-var _AGING_PAY_TYPES = ["צ'ק", 'העברה בנקאית', 'מזומן', 'כרטיס אשראי'];
+var _AGING_PAY_TYPES = ["צ'ק", 'העברה בנקאית', 'מזומן', 'כרטיס אשראי', 'דיווח בע"פ (ללא אסמכתא)'];
 var _collect = null;
 
 function _agingMe() { var a = {}; try { a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {} return a; }
