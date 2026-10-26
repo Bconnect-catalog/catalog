@@ -5844,6 +5844,10 @@ const ALL_PRODUCTS = (() => {
      `if (!p.brand_label)` שומר על תוויות קיימות — למשל שני מוצרי Defunc
      שיושבים בתוך מערך החיסול ואסור שיסומנו כ-Clearance. */
   const tag = (a, label) => { a.forEach(p => { if (p && !p.brand_label) p.brand_label = label; }); return a; };
+  /* כלל קבוע של המשתמש (26/10/26): בונוס 10+1 לכל המוצרים של 4 מותגים — UGREEN (בלי NAS),
+     Reolink, JLab ובלאופונקט — גם למוצר חדש שלא סומן. הבונוס ממילא לא חל במבצע, בחיסול
+     או ללקוח עם הנחה מיוחדת (getBonusQty / פאנל הכרטיס). bonus_ratio:0 במוצר = ביטול מכוון;
+     מוצר של מותג זר בתוך המערך (brand_logo, למשל PC "לא UGREEN") לא מקבל. */
   const arr = [
     ...tag(SS_PRODUCTS, 'SteelSeries'),
     ...tag(GLO_PRODUCTS, 'Glorious'),
@@ -5867,6 +5871,11 @@ const ALL_PRODUCTS = (() => {
     ...tag(JABRA_PRODUCTS, 'Jabra'),
     ...PROMO_PRODUCTS
   ];
+  const _bonusBrands = {ugreen: 1, jlab: 1, reolink: 1, blaupunkt: 1};
+  arr.forEach(p => {
+    if (p && _bonusBrands[String(p.brand_label || '').toLowerCase()] && p.bonus_ratio === undefined
+        && p.sheet !== 'NAS' && !p.brand_logo && !p.agent_bonus) p.bonus_ratio = 10;
+  });
   return arr.filter(p => { if (seen.has(p.barcode)) return false; seen.add(p.barcode); return true; });
 })();
 
