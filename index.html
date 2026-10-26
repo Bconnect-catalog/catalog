@@ -13737,6 +13737,18 @@ function _recalcOrderShipping() {
   }
 }
 
+// פתיחת וואטסאפ עם הודעה. באנדרואיד: סכמת whatsapp:// ולא קישור https://wa.me —
+// את קישור ה-https תופס תמיד הוואטסאפ האישי (App Link מאומת), ולכן העותק הכפול
+// (Dual Messenger, המספר של העבודה) לא נפתח לעולם. עם הסכמה הטלפון שואל באיזה וואטסאפ לפתוח.
+function _openWhatsApp(phone, text) {
+  var ph = String(phone || '').replace(/\D/g, ''), t = encodeURIComponent(text || '');
+  if (/Android/i.test(navigator.userAgent || '')) {
+    location.href = 'whatsapp://send?phone=' + ph + '&text=' + t;
+    return;
+  }
+  window.open('https://wa.me/' + ph + '?text=' + t, '_blank');
+}
+
 function doSendWhatsApp() {
   const items = getOrderedProducts();
   const customer = document.getElementById('customerName').value.trim();
@@ -13771,7 +13783,7 @@ function doSendWhatsApp() {
     'וילי': '972544878315'
   };
   const toPhone = agentPhones[agent] || OWNER_PHONE;
-  window.open(`https://wa.me/${toPhone}?text=${encodeURIComponent(text)}`, '_blank');
+  _openWhatsApp(toPhone, text);
   _saveHistory('');
   deductStock();
   closeModal();
@@ -22275,7 +22287,7 @@ function _agingPlanLines(rows) {
 function _agingSelected() { return _aging ? _aging.rows.filter(function (r, i) { return _aging.sel[i]; }) : []; }
 
 // ── תנאי אשראי ותזכורות (25/10/26) ──
-var _AGING_PAY_METHODS = ['גוביינה', 'נגבה ע"י סוכן', 'אשראי — במעמד הזמנה', 'אשראי — במועד גבייה'];
+var _AGING_PAY_METHODS = ['גוביינה', 'נגבה ע"י סוכן', 'אשראי — במעמד הזמנה', 'אשראי — במועד גבייה', 'העברה בנקאית — במעמד הזמנה', 'העברה בנקאית — במועד התשלום'];
 function _agingEom(iso) { var d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); return new Date(d.getFullYear(), d.getMonth() + 1, 0, 12); }
 function _agingIso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 // "שוטף + N" מהחשבוניות: ימים מסוף חודש ההנפקה עד תאריך הערך, מעוגל לתנאי המקובל הקרוב (המופע השכיח)
@@ -22658,7 +22670,7 @@ function _agingSendWhatsApp() {
   var ph = String((_aging.contact || {}).phone || '').replace(/\D/g, '');
   if (ph.indexOf('0') === 0) ph = '972' + ph.slice(1);
   if (!ph) { alert('אין טלפון ללקוח — הוסף בעריכת איש קשר'); return; }
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_agingWaText()), '_blank');
+  _openWhatsApp(ph, _agingWaText());
 }
 
 function _agingSendEmail() {
@@ -23089,7 +23101,7 @@ function _agingSendReceiptWa(col) {
   var ph = String(((_aging && _aging.contact) || {}).phone || '').replace(/\D/g, '');
   if (ph.indexOf('0') === 0) ph = '972' + ph.slice(1);
   if (!ph) { alert('אין טלפון ללקוח — הוסף בעריכת איש קשר'); return; }
-  window.open('https://wa.me/' + ph + '?text=' + encodeURIComponent(_agingReceiptText(col)), '_blank');
+  _openWhatsApp(ph, _agingReceiptText(col));
 }
 
 // קובץ PDF של האישור, כולל צילום הצ'ק/האסמכתא — לשיתוף בחלון השיתוף של הטלפון
