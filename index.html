@@ -22863,7 +22863,50 @@ function _agingRenderCollected() {
   h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; גבייה שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה</div>';
   body.innerHTML = h;
   document.getElementById('agingFoot').innerHTML = '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
-    '<button onclick="_agingCollectedPdf()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 PDF / שיתוף</button></div>';
+    '<button onclick="_agingCollectedPdf()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 PDF / שיתוף</button>' +
+    '<button onclick="_agingCollectedXlsx()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#1d7a46;color:#fff;font-weight:800;cursor:pointer">📊 Excel / שיתוף</button></div>';
+}
+// אותו דוח כגיליון: שורה לכל תשלום + סיכום, לחישוב ולבדיקה מול הנה"ח
+function _agingCollectedXlsx() {
+  if (!_coll || !_coll.data) return;
+  if (typeof XLSX === 'undefined') { alert('טוען ספריית Excel... נסה שוב בעוד שנייה'); return; }
+  var k = _agingCollCalc(), m = _coll.month;
+  var B = {font: {bold: true}}, H = {font: {bold: true, color: {rgb: 'FFFFFF'}}, fill: {fgColor: {rgb: '1A9A5C'}}, alignment: {horizontal: 'center'}};
+  var rows = [[{v: 'גבייה בפועל — ' + _agingMonthName(m) + (_coll.agent ? ' · סוכן: ' + _coll.agent : ''), s: {font: {bold: true, sz: 14}}}],
+    ['הופק ' + _agingDate(_agingToday())], [],
+    ['קבוצה', 'מס׳ לקוח', 'לקוח', 'תאריך', 'תאריך ערך', 'פרטים', 'סטטוס', 'סכום', 'לפני מע״מ'].map(function (t) { return {v: t, s: H}; })];
+  var add = function (grp, arr, noVat) {
+    arr.forEach(function (c) {
+      c.lines.forEach(function (l) {
+        var amt = Number(l.amount) || 0;
+        rows.push([grp, c.num, c.name, _agingDate(l.date), l.valueDate ? _agingDate(l.valueDate) : '',
+          l.src === 'agent' ? 'דווח ע״י הסוכן' + (l.method ? ' · ' + l.method : '') : 'קבלה ' + l.receiptNo,
+          l.src === 'agent' ? 'ממתין לאימות' : (l.src === 'both' ? 'אומת' : 'מהדוח') + (l.dateSrc === 'משוער' ? ' · תאריך משוער' : ''),
+          amt, Math.round((noVat ? amt : amt / 1.18) * 100) / 100]);
+      });
+    });
+  };
+  add('כולל מע״מ', k.reg, false); add('אילת — ללא מע״מ', k.eil, true);
+  rows.push([]);
+  [['סה״כ כולל מע״מ', k.regGross], ['לפני מע״מ', k.regNet], ['אילת (ללא מע״מ)', k.eilGross], ['בסיס לעמלה (ללא מע״מ)', k.base]]
+    .concat(k.pending ? [['מתוכו ממתין לאימות', k.pending]] : []).concat(k.estimated ? [['מתוכו בתאריך קבלה משוער', k.estimated]] : [])
+    .forEach(function (r, i) { rows.push(['', '', '', '', '', '', {v: r[0], s: B}, {v: r[1], t: 'n', s: i === 3 ? {font: {bold: true}, fill: {fgColor: {rgb: 'D9F2E4'}}} : B}]); });
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch: 14}, {wch: 9}, {wch: 30}, {wch: 10}, {wch: 10}, {wch: 26}, {wch: 24}, {wch: 12}, {wch: 12}];
+  Object.keys(ws).forEach(function (a) {
+    if (a[0] === '!') return;
+    var col = XLSX.utils.decode_cell(a).c;
+    if ((col === 7 || col === 8) && typeof ws[a].v === 'number') { ws[a].z = '#,##0.00'; }
+  });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'גבייה בפועל');
+  wb.Workbook = {Views: [{RTL: true}], Sheets: [{RTL: true}]};
+  var fname = 'גבייה בפועל - ' + _agingMonthName(m) + (_coll.agent ? ' - ' + _coll.agent : '') + '.xlsx';
+  var mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', file = null;
+  var blob = new Blob([XLSX.write(wb, {bookType: 'xlsx', type: 'array'})], {type: mime});
+  try { file = new File([blob], /Windows/i.test(navigator.userAgent || '') ? 'BConnect_Collected_' + m + '.xlsx' : fname, {type: mime}); } catch (e) {}
+  if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: fname}).catch(function () {});
+  else _agingSaveBlob(blob, fname);
 }
 function _agingCollectedPdf() {
   if (!_coll || !_coll.data) return;
