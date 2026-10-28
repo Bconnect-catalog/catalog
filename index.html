@@ -9632,20 +9632,27 @@ function navigate(pageId) {
   showPage(pageId);
 }
 
+// ← בקטלוג: שלב אחד אחורה — חיפוש → תת-קטגוריה → קטגוריה → מסנן → עמוד הבית.
+// (בעבר הכפתור ביטל בשקט את השינוי האחרון בעגלה ולא זז — נראה כאילו לא עושה כלום)
 function goBack() {
-  if (ordersHistory.length > 0) {
-    const snap = JSON.parse(ordersHistory.pop()); orders = snap.orders; orderPrices = snap.orderPrices || {}; itemNotes = snap.itemNotes || {};
-    updateBar();
+  var s = document.getElementById('search');
+  if (s && s.value.trim()) {
+    s.value = ''; searchTerm = '';
+    try { setHighlightTerms([]); } catch (e) {}
     renderCards();
-  } else {
-    navHistory.pop();
-    const prev = navHistory.length > 0 ? navHistory[navHistory.length - 1] : 'home';
-    showPage(prev);
-    if (prev === 'home') {
-      const hasItems = Object.keys(orders).length > 0;
-      if (!hasItems) document.getElementById('orderBar').classList.remove('visible');
-    }
+    return;
   }
+  if (currentCat !== 'all' && !String(currentCat).startsWith('__brand__')) {
+    var subs = [currentBPSubcat, currentPhilipsAudioSubcat, currentBOSubcat, currentReolinkSubcat, currentBeyerSubcat, currentBeyerGroup, cableTypeFilter, cableLenFilter, accessoryCatFilter];
+    if (subs.some(function (x) { return x && x !== 'all'; })) { setCat(currentCat); return; }
+    setCat('all', document.querySelector('#catsRow .cat-btn-all'));
+    return;
+  }
+  if (currentBrand !== 'promo' && currentFilter && currentFilter !== 'all' && currentFilter !== 'none') {
+    setFilter('all', document.querySelector('.filter-btn[onclick*="\'all\'"]'));
+    return;
+  }
+  goHome();
 }
 
 
@@ -14067,6 +14074,24 @@ function _onCatalogScroll() {
   }
 }
 window.addEventListener('scroll', _onCatalogScroll, {passive: true});
+// דף קצר (למשל תת-קטגוריה עם 2 מוצרים) לא נגלל ולכן לא שולח scroll — הסרגלים שהוסתרו נשארו תקועים.
+// מחזירים אותם כשאין לאן לגלול, או בניסיון גלילה למעלה.
+function _headerAutoShow(wantUp) {
+  if (!_scrollHideActive) return;
+  var sy = window.scrollY || document.documentElement.scrollTop;
+  var room = document.documentElement.scrollHeight - window.innerHeight;
+  if (sy < 50 || room < 80 || wantUp) _setScrollHidden(false);
+}
+window.addEventListener('wheel', function (e) { _headerAutoShow(e.deltaY < 0); }, {passive: true});
+var _touchY0 = null;
+window.addEventListener('touchstart', function (e) { _touchY0 = e.touches[0] ? e.touches[0].clientY : null; }, {passive: true});
+window.addEventListener('touchmove', function (e) {
+  var y = e.touches[0] ? e.touches[0].clientY : null;
+  _headerAutoShow(_touchY0 !== null && y !== null && y - _touchY0 > 20);
+}, {passive: true});
+document.addEventListener('click', function (e) {
+  if (e.target && e.target.closest && e.target.closest('.cats-row, .filters-row')) setTimeout(_headerAutoShow, 120);
+}, true);
 
 function showPromoSelector() {
   var promoNames = [];
