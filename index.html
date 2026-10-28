@@ -22211,7 +22211,8 @@ function _agingPickAgent(agents) {
     var l = a.toLowerCase();
     return tags.some(function (t) { return l === t || l.indexOf(t + ' ') === 0 || t.indexOf(l + ' ') === 0; });
   })[0];
-  return mine || agents[0];
+  // ברירת מחדל למנהל: הלקוחות של מרקו, גם כשהשם במשתמש לא תואם לשם הסוכן בדוח
+  return mine || (agents.indexOf('מרקו') >= 0 ? 'מרקו' : agents[0]);
 }
 function _agingAgentSelect(agents, onchange) {
   if (_agingAuth().role !== 'admin' || agents.length < 2) return '';
@@ -22972,7 +22973,7 @@ function _agingOpenCollect() {
   var s = _agingSelected();
   if (!s.length) { alert('סמן בכרטיס את החשבוניות ששולמו, ואז "רישום גבייה"'); return; }
   var tot = _agingSum(s);
-  _collect = {rows: s, lines: [{method: "צ'ק", amount: tot > 0 ? tot.toFixed(2) : '', dueDate: '', ref: '', file: null}], note: '', sendMail: true, saving: false};
+  _collect = {rows: s, lines: [{method: "צ'ק", amount: tot > 0 ? tot.toFixed(2) : '', dueDate: '', ref: '', file: null}], note: '', saving: false};
   _agingRenderCollect();
 }
 
@@ -23020,9 +23021,6 @@ function _agingRenderCollect() {
   h += '<button onclick="_collect.lines.push({method:&quot;צ\'ק&quot;,amount:\'\',dueDate:\'\',ref:\'\',file:null});_agingRenderCollect()" style="width:100%;padding:8px;border-radius:10px;border:1px dashed #3d4b78;background:none;color:#9fb4ea;cursor:pointer;font-size:.84rem">+ אמצעי תשלום נוסף (עוד צ\'ק / שילוב)</button>' +
     '<div id="agingCollectSum" style="margin:10px 0;font-size:.84rem"></div>' +
     '<textarea placeholder="הערה (לא חובה)" oninput="_collect.note=this.value" rows="2" style="' + inp + ';resize:vertical">' + _agingEsc(c.note) + '</textarea>' +
-    '<div style="margin-top:10px;font-size:.8rem;color:#8792b3">📧 שליחת פרטי הגבייה במייל (כולל הצילום/הקובץ):</div>' +
-    '<label style="display:flex;gap:8px;align-items:center;margin-top:4px;font-size:.84rem;cursor:pointer"><input type="checkbox" ' + (c.sendMail ? 'checked' : '') + ' onchange="_collect.sendMail=this.checked" style="width:18px;height:18px">ילנה — הנהלת חשבונות לקוחות <span dir="ltr" style="color:#8792b3;font-size:.74rem">Finance@bconnect.co.il</span></label>' +
-    '<label style="display:flex;gap:8px;align-items:center;margin-top:4px;font-size:.84rem;cursor:pointer"><input type="checkbox" ' + (c.sendMarina ? 'checked' : '') + ' onchange="_collect.sendMarina=this.checked" style="width:18px;height:18px">גם למרינה — מנהלת חשבונות ראשית <span dir="ltr" style="color:#8792b3;font-size:.74rem">marina@bconnect.co.il</span></label>' +
     '</div><div style="padding:10px 16px;border-top:1px solid #26304d;display:flex;gap:8px">' +
       '<button id="agingCollectSave" onclick="_agingSaveCollect()" style="flex:2;padding:11px;border-radius:10px;border:none;background:#1a9a5c;color:#fff;font-weight:900;cursor:pointer">' + (c.saving ? 'שומר...' : '✓ שמירת גבייה') + '</button>' +
       '<button onclick="_agingCloseCollect()" style="flex:1;padding:11px;border-radius:10px;border:1px solid #555;background:none;color:#ddd;cursor:pointer">ביטול</button></div></div>';
@@ -23070,7 +23068,7 @@ function _agingSaveCollect() {
   var body = {action: 'saveCollection', id: id, cust: _aging.num, custName: _aging.name, reportAgent: _aging.agent,
     invoices: c.rows.map(function (r) { return {label: _agingDocLabel(r), type: r.type, sourceNo: r.sourceNo, valueDate: r.valueDate, open: r.open}; }),
     payments: lines.map(function (l) { return {method: l.method, amount: Number(l.amount), dueDate: l.dueDate, ref: l.ref, file: l.file ? {name: l.file.name, mime: l.file.mime, b64: l.file.b64} : null}; }),
-    note: c.note, sendMail: !!c.sendMail, sendMarina: !!c.sendMarina};
+    note: c.note, sendMail: false, sendMarina: false};   // הנה"ח מקבלת הודעה מהסוכן עצמו (_agingShareReceiptPdf עם fin), לא מהשרת
   c.saving = true; _agingRenderCollect();
   var local = {id: id, lines: lines, rows: c.rows, note: c.note};
   var num = _aging.num, tries = 0;
@@ -23088,16 +23086,52 @@ function _agingSaveCollect() {
 function _agingCollectDone(col, local) {
   var o = document.getElementById('agingCollect'); if (!o) return;
   col._localFiles = (local.lines || []).map(function (l) { return l.file && l.file.preview ? l.file.preview : null; });
+  col._localRaw = (local.lines || []).map(function (l) { return l.file || null; });
   window._agingLastCollect = col;
-  var mail = col.mailStatus ? ('📧 ' + _agingEsc(col.mailStatus) + (col.mailedTo ? ' ל-' + _agingEsc(col.mailedTo.replace(/Finance@bconnect\.co\.il/i, 'ילנה').replace(/marina@bconnect\.co\.il/i, 'מרינה').replace(',', ' ו')) : '')) : '📧 לא נשלח מייל להנה״ח';
+  var fin = _agingFinanceNotes(col).length > 0;
+  var mail = fin ? '📧 שלח עכשיו הודעה להנהלת חשבונות (הכפתור הכחול)' : '💳 תשלום באשראי — מנהלת החשבונות מטפלת מול הלקוח, אין צורך בהודעה';
   o.innerHTML = '<div style="width:92%;max-width:440px;background:#141a2e;border:2px solid #2ec58a;border-radius:16px;direction:rtl;color:#e8eefc;overflow:hidden">' +
     '<div style="background:#1a9a5c;padding:12px 16px;font-weight:900">✓ הגבייה נשמרה</div>' +
     '<div style="padding:14px 16px;font-size:.88rem;line-height:1.6">נגבה <b dir="ltr">' + _agingMoney(col.total) + ' ₪</b> מ-' + _agingEsc(_aging ? _aging.name : col.name) +
       ' · ' + (col.invoices || []).length + ' חשבוניות סומנו כשולמו<br><span style="color:#b9f3d6">' + mail + '</span></div>' +
     '<div style="display:flex;flex-direction:column;gap:8px;padding:0 16px 14px">' +
+      (fin ? '<button onclick="_agingShareReceiptPdf(window._agingLastCollect,true)" style="padding:11px;border-radius:10px;border:none;background:#0f6cbd;color:#fff;font-weight:800;cursor:pointer">📧 שליחה להנהלת חשבונות</button>' : '') +
       '<button onclick="_agingSendReceiptWa(window._agingLastCollect)" style="padding:11px;border-radius:10px;border:none;background:#1fa855;color:#fff;font-weight:800;cursor:pointer">💬 אישור מסירת תשלום ללקוח בוואטסאפ</button>' +
       '<button onclick="_agingShareReceiptPdf(window._agingLastCollect)" style="padding:11px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 שיתוף האישור כקובץ (עם צילום האמצעי)</button>' +
       '<button onclick="_agingCloseCollect();_agingLoad(\'' + _agingEsc(col.num) + '\')" style="padding:10px;border-radius:10px;border:1px solid #555;background:none;color:#ddd;cursor:pointer">סגירה וחזרה לכרטיס</button></div></div>';
+}
+
+// ── הודעה להנהלת חשבונות: אותו קובץ כמו האישור ללקוח, בנוסח אחר. הסוכן בוחר נמען באפליקציית המייל ──
+// אשראי — מנהלת החשבונות סולקת מול הלקוח, ולכן אין הודעה
+var _AGING_FIN_NOTES = {
+  'העברה בנקאית': 'נא לקלוט את התשלום עם הופעתו בחשבון הבנק, להנפיק קבלה בהתאם ולשלוח אליי/ללקוח.',
+  "צ'ק": "נא לקלוט את התשלום עם קבלת הצ'ק, להנפיק קבלה בהתאם ולשלוח אליי/ללקוח.",
+  'מזומן': 'נא לקלוט את התשלום עם קבלת המזומן, להנפיק קבלה בהתאם ולשלוח אליי/ללקוח.'
+};
+var _AGING_FIN_NOTE_OTHER = 'נא לקלוט את התשלום עם קבלתו, להנפיק קבלה בהתאם ולשלוח אליי/ללקוח.';
+function _agingFinanceNotes(col) {
+  var seen = {}, out = [];
+  (col.payments || []).forEach(function (p) {
+    if (/אשראי/.test(p.method || '')) return;
+    var n = _AGING_FIN_NOTES[p.method] || _AGING_FIN_NOTE_OTHER;
+    if (!seen[n]) { seen[n] = 1; out.push(n); }
+  });
+  return out;
+}
+// קבצים שאינם תמונה (PDF של אסמכתא) — לא נכנסים לקובץ המאוחד, ולכן מצורפים לצדו
+function _agingCollectOtherFiles(col) {
+  return Promise.all((col.payments || []).map(function (p, i) {
+    var raw = col._localRaw && col._localRaw[i];
+    var mime = (raw && raw.mime) || p.mime || '';
+    if (!mime || /^image\//.test(mime)) return null;
+    var mk = function (b64, m, name) {
+      try { var bin = atob(b64), arr = new Uint8Array(bin.length); for (var k = 0; k < bin.length; k++) arr[k] = bin.charCodeAt(k);
+        return new File([arr], name || p.fileName || ('אסמכתא ' + (i + 1) + '.pdf'), {type: m}); } catch (e) { return null; }
+    };
+    if (raw && raw.b64) return mk(raw.b64, mime, raw.name);
+    if (!p.fileId) return null;
+    return _agingApi('getCollectionFile', {id: col.id, fileId: p.fileId}).then(function (d) { return d && d.ok ? mk(d.b64, d.mime) : null; }).catch(function () { return null; });
+  })).then(function (a) { return a.filter(Boolean); });
 }
 
 // ── אישור מסירת תשלום לסוכן (ללקוח) ──
@@ -23125,25 +23159,29 @@ function _agingSendReceiptWa(col) {
 }
 
 // קובץ PDF של האישור, כולל צילום הצ'ק/האסמכתא — לשיתוף בחלון השיתוף של הטלפון
-function _agingShareReceiptPdf(col) {
+function _agingShareReceiptPdf(col, fin) {
   if (!col) return;
+  var notes = fin ? _agingFinanceNotes(col) : [];
+  if (fin && !notes.length) { alert('תשלום באשראי — מנהלת החשבונות מטפלת מול הלקוח, אין צורך בהודעה'); return; }
   if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas === 'undefined') { alert('טוען ספריית PDF... נסה שוב בעוד שנייה'); return; }
-  _agingCollectImages(col).then(function (imgs) {
+  Promise.all([_agingCollectImages(col), fin ? _agingCollectOtherFiles(col) : []]).then(function (got) {
+    var imgs = got[0], extra = got[1];
     var holder = document.createElement('div');
     holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:720px;background:#fff;color:#1d2433;direction:rtl;font-family:Heebo,Arial,sans-serif;padding:26px 28px';
     var td = 'padding:6px 8px;border-bottom:1px solid #e1e5ee;font-size:12.5px';
     var agent = col.agentName || _agingMe().name || col.agent || '';
     holder.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1a9a5c;padding-bottom:8px">' +
-      '<div style="font-size:21px;font-weight:900">אישור מסירת תשלום לסוכן</div><div style="font-size:19px;font-weight:900;color:#2f6fd6;font-style:italic">BConnect</div></div>' +
+      '<div style="font-size:21px;font-weight:900">' + (fin ? 'הודעה להנהלת חשבונות על קבלת תשלום מלקוח' : 'אישור מסירת תשלום לסוכן') + '</div><div style="font-size:19px;font-weight:900;color:#2f6fd6;font-style:italic">BConnect</div></div>' +
       '<div style="margin:12px 0;font-size:14px"><b>' + _agingEsc(col.name || (_aging && _aging.name) || '') + '</b> (' + _agingEsc(col.num) + ') מסר/ה ל' + _agingEsc(agent) + ' ביום ' + _agingDate(String(col.createdAt).split(' ')[0]) + '</div>' +
       '<table style="width:100%;border-collapse:collapse"><tr><th style="' + td + ';text-align:right">אמצעי</th><th style="' + td + ';text-align:right">מס׳/אסמכתא</th><th style="' + td + ';text-align:right">תאריך</th><th style="' + td + ';text-align:left">סכום</th></tr>' +
       (col.payments || []).map(function (p) { return '<tr><td style="' + td + '">' + _agingEsc(p.method) + '</td><td style="' + td + '">' + _agingEsc(p.ref || '') + '</td><td style="' + td + '">' + _agingDate(p.dueDate) + '</td><td style="' + td + ';text-align:left;font-weight:800" dir="ltr">' + _agingMoney(p.amount) + '</td></tr>'; }).join('') +
       '</table><div style="margin:8px 0 12px;font-weight:900;font-size:15px">סה"כ: <span dir="ltr">' + _agingMoney(col.total) + ' ₪</span> (כולל מע"מ)</div>' +
-      '<div style="font-weight:800;font-size:13px;margin-bottom:4px">עבור החשבוניות</div><table style="width:100%;border-collapse:collapse">' +
+      '<div style="font-weight:800;font-size:13px;margin-bottom:4px">עבור החשבוניות' + (fin ? ' <span style="font-weight:700;color:#b3261e">(נא לסגור בכרטיס הלקוח את החשבוניות המוצגות כמשולמות)</span>' : '') + '</div><table style="width:100%;border-collapse:collapse">' +
       (col.invoices || []).map(function (x) { return '<tr><td style="' + td + '">' + _agingEsc(x.type) + '</td><td style="' + td + '" dir="ltr">' + _agingEsc(x.label) + '</td><td style="' + td + '">ערך ' + _agingDate(x.valueDate) + '</td><td style="' + td + ';text-align:left" dir="ltr">' + _agingMoney(x.open) + '</td></tr>'; }).join('') + '</table>' +
       (col.note ? '<div style="margin-top:10px;font-size:13px">הערה: ' + _agingEsc(col.note) + '</div>' : '') +
       imgs.filter(Boolean).map(function (src) { return '<div style="margin-top:12px;text-align:center"><img src="' + src + '" style="max-width:100%;max-height:420px;border:1px solid #ccc"></div>'; }).join('') +
-      '<div style="margin-top:14px;padding:9px 12px;background:#fff8d6;border:1px solid #f0d77a;border-radius:8px;font-size:12px">' + _AGING_RECEIPT_FOOT + '</div>';
+      (fin ? notes.map(function (n) { return '<div style="margin-top:14px;padding:9px 12px;background:#e8f1ff;border:1px solid #9cc0f5;border-radius:8px;font-size:12.5px;font-weight:700">' + n + '</div>'; }).join('')
+           : '<div style="margin-top:14px;padding:9px 12px;background:#fff8d6;border:1px solid #f0d77a;border-radius:8px;font-size:12px">' + _AGING_RECEIPT_FOOT + '</div>');
     document.body.appendChild(holder);
     html2canvas(holder, {scale: 2, backgroundColor: '#ffffff', logging: false}).then(function (canvas) {
       holder.remove();
@@ -23151,10 +23189,14 @@ function _agingShareReceiptPdf(col) {
       var pw = pdf.internal.pageSize.getWidth(), ph2 = pdf.internal.pageSize.getHeight(), m = 8, w = pw - m * 2, hh = canvas.height * w / canvas.width, ch = ph2 - m * 2;
       var pages = Math.max(1, Math.ceil((hh - 0.05) / ch)), im = canvas.toDataURL('image/jpeg', 0.88);
       for (var pg = 0; pg < pages; pg++) { if (pg) pdf.addPage(); pdf.addImage(im, 'JPEG', m, m - pg * ch, w, hh, 'rcimg', 'FAST'); }
-      var fname = 'אישור מסירת תשלום - ' + String(col.name || '').replace(/[\\/:*?"<>|]/g, '') + ' - ' + _agingDate(String(col.createdAt).split(' ')[0]).replace(/\//g, '.') + '.pdf';
+      var fname = (fin ? 'קבלת תשלום מלקוח - ' : 'אישור מסירת תשלום - ') + String(col.name || '').replace(/[\\/:*?"<>|]/g, '') + ' - ' + _agingDate(String(col.createdAt).split(' ')[0]).replace(/\//g, '.') + '.pdf';
       var blob = pdf.output('blob'), file = null;
-      try { file = new File([blob], _agingShareName(fname, 'Payment', col.num, String(col.createdAt).split(' ')[0]), {type: 'application/pdf'}); } catch (e) {}
-      if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: fname, text: 'אישור מסירת תשלום לסוכן'}).catch(function () {});
+      try { file = new File([blob], _agingShareName(fname, fin ? 'PaymentFinance' : 'Payment', col.num, String(col.createdAt).split(' ')[0]), {type: 'application/pdf'}); } catch (e) {}
+      var files = file ? [file].concat(extra) : [];
+      var title = fin ? 'קבלת תשלום מלקוח — ' + (col.name || '') + ' (' + col.num + ') — ' + _agingMoney(col.total) + ' ₪' : fname;
+      var text = fin ? 'הודעה להנהלת חשבונות על קבלת תשלום מלקוח ' + (col.name || '') + ' (' + col.num + '), ' + _agingMoney(col.total) + ' ₪. הפירוט בקובץ המצורף.' : 'אישור מסירת תשלום לסוכן';
+      if (files.length && navigator.canShare && navigator.canShare({files: files})) navigator.share({files: files, title: title, text: text}).catch(function () {});
+      else if (file && navigator.canShare && navigator.canShare({files: [file]})) navigator.share({files: [file], title: title, text: text}).catch(function () {});
       else _agingSaveBlob(blob, fname);
     }).catch(function (err) { holder.remove(); alert('שגיאה ביצירת PDF: ' + err.message); });
   });
@@ -23196,7 +23238,8 @@ function _agingShowCollection(id) {
       (col.note ? '<div style="margin-top:6px;color:#c7d0ea">הערה: ' + _agingEsc(col.note) + '</div>' : '') +
     '</div><div style="display:flex;gap:8px;padding:10px 16px;border-top:1px solid #26304d">' +
       '<button onclick="_agingSendReceiptWa(window._agingViewCol)" style="flex:1;padding:10px;border-radius:10px;border:none;background:#1fa855;color:#fff;font-weight:800;cursor:pointer;font-size:.82rem">💬 אישור ללקוח</button>' +
-      '<button onclick="_agingShareReceiptPdf(window._agingViewCol)" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer;font-size:.82rem">📄 קובץ אישור</button></div></div>';
+      '<button onclick="_agingShareReceiptPdf(window._agingViewCol)" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer;font-size:.82rem">📄 קובץ אישור</button>' +
+      (_agingFinanceNotes(col).length ? '<button onclick="_agingShareReceiptPdf(window._agingViewCol,true)" style="flex:1;padding:10px;border-radius:10px;border:none;background:#0f6cbd;color:#fff;font-weight:800;cursor:pointer;font-size:.82rem">📧 להנה״ח</button>' : '') + '</div></div>';
 }
 
 function _agingViewFile(i) {
