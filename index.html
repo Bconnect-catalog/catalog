@@ -22830,7 +22830,7 @@ function _agingSharePdf() {
 // ── גבייה בפועל (26/10/26) ──────────────────────────────────────────
 // הסוכן מקבל עמלה על הגבייה: כמה נגבה החודש, לקוח-לקוח, תשלום-תשלום.
 // מקורות: קבלות מהדוח (לפי תאריך קבלה — כמו הנה"ח) + גביות שהסוכן רשם בקטלוג.
-// גבייה שנמצאה לה קבלה = "אומתה"; בלי קבלה עדיין = "ממתינה לאימות" (נספרת, מסומנת).
+// גבייה שנמצאה לה קבלה = "אומתה"; בלי קבלה עדיין — רק צ'ק נספר ("ממתין לאימות"); מזומן/העברה/אשראי רק עם קבלה.
 // עמלה על סכום לפני מע"מ: רגיל ÷ 1.18; לקוחות אילת — החשבונית בלי מע"מ, אין מה לקזז.
 var _coll = null;
 function _agingMonthAdd(m, k) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1 + k; var d = new Date(y, mo, 1); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
@@ -22844,6 +22844,9 @@ function _agingOpenCollected(month) {
   _agingApi('getCollected', {month: month}).then(function (d) {
     if (!_coll || _coll.month !== month) return;
     if (!d || !d.ok) { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">לא ניתן לטעון</div>'; return; }
+    // לעמלה, לפני קבלה רשמית מביקונקט — רק צ'ק. מזומן/העברה/אשראי/בע"פ נספרים רק כשהקבלה מופיעה בדוח (29/10/26).
+    // בכרטיס הלקוח הם עדיין מקזזים את החוב — הסינון כאן בלבד.
+    d.lines = (d.lines || []).filter(function (l) { return l.src !== 'agent' || l.method === "צ'ק"; });
     _coll.data = d; _agingRenderCollected();
   }).catch(function () { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">שגיאת תקשורת</div>'; });
 }
@@ -22908,7 +22911,7 @@ function _agingRenderCollected() {
   };
   if (!k.list.length) h += '<div style="color:#8792b3;text-align:center;padding:24px">אין גבייה רשומה ל' + _agingMonthName(m) + '</div>';
   h += sec('לקוחות — כולל מע״מ', k.reg, '#9fc3f0') + sec('לקוחות אילת — ללא מע״מ', k.eil, '#ffd27a');
-  h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; גבייה שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה</div>';
+  h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; צ׳ק שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה; מזומן, העברה ואשראי נספרים רק כשהקבלה מופיעה בדוח</div>';
   body.innerHTML = h;
   document.getElementById('agingFoot').innerHTML = '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
     '<button onclick="_agingCollectedPdf()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 PDF / שיתוף</button>' +
