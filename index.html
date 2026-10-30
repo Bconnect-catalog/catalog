@@ -22599,7 +22599,7 @@ function _agingRender() {
     a.collections.forEach(function (cl) {
       (cl.payments || []).forEach(function (p) {
         h += '<div onclick="_agingShowCollection(\'' + _agingEsc(cl.id) + '\')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid #26304d;cursor:pointer">' +
-          '<div><div style="font-size:.86rem;font-weight:700">' + _agingEsc(p.method) + (p.ref ? ' <span style="color:#8792b3;font-weight:600">#' + _agingEsc(p.ref) + '</span>' : '') + (p.fileId ? ' 📎' : '') + '</div>' +
+          '<div><div style="font-size:.86rem;font-weight:700">' + _agingEsc(p.method) + (p.ref ? ' <span style="color:#8792b3;font-weight:600">#' + _agingEsc(p.ref) + '</span>' : '') + (p.receiptIssued ? ' <span style="color:#5fd38d;font-size:.74rem">🧾 הונפקה קבלה</span>' : '') + (p.fileId ? ' 📎' : '') + '</div>' +
           '<div style="font-size:.72rem;color:#8792b3">פירעון ' + _agingDate(p.dueDate) + ' · נרשם ' + _agingEsc(String(cl.createdAt).split(' ')[0].split('-').reverse().join('/')) + ' · ' + _agingEsc(cl.agentName || cl.agent) +
           (cl.pending ? ' · <span style="color:#5fd38d">טרם נקלט בהנה״ח</span>' : ' · נקלט בהנה״ח') + '</div></div>' +
           '<div style="font-weight:900;color:#5fd38d;direction:ltr;text-decoration:underline">' + _agingMoney(p.amount) + '</div></div>';
@@ -22846,7 +22846,8 @@ function _agingOpenCollected(month) {
     if (!d || !d.ok) { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">לא ניתן לטעון</div>'; return; }
     // לעמלה, לפני קבלה רשמית מביקונקט — רק צ'ק. מזומן/העברה/אשראי/בע"פ נספרים רק כשהקבלה מופיעה בדוח (29/10/26).
     // בכרטיס הלקוח הם עדיין מקזזים את החוב — הסינון כאן בלבד.
-    d.lines = (d.lines || []).filter(function (l) { return l.src !== 'agent' || l.method === "צ'ק"; });
+    // אשראי — הנה"ח סולקת ושולחת קבלה; הסוכן מסמן "הונפקה קבלה" ואז זה נספר כוודאי (30/10/26)
+    d.lines = (d.lines || []).filter(function (l) { return l.src !== 'agent' || l.method === "צ'ק" || l.receiptIssued; });
     _coll.data = d; _agingRenderCollected();
   }).catch(function () { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">שגיאת תקשורת</div>'; });
 }
@@ -22863,9 +22864,10 @@ function _agingCollCalc() {
   var reg = list.filter(function (c) { return !c.noVat; }), eil = list.filter(function (c) { return c.noVat; });
   var regGross = sum(reg), eilGross = sum(eil), regNet = Math.round(regGross / vat * 100) / 100;
   return {list: list, reg: reg, eil: eil, regGross: regGross, regNet: regNet, eilGross: eilGross, base: Math.round((regNet + eilGross) * 100) / 100,
-          pending: sum(list, function (l) { return l.src === 'agent'; }), estimated: sum(list, function (l) { return l.src !== 'agent' && l.dateSrc === 'משוער'; })};
+          pending: sum(list, function (l) { return l.src === 'agent' && !l.receiptIssued; }), estimated: sum(list, function (l) { return l.src !== 'agent' && l.dateSrc === 'משוער'; })};
 }
 function _agingCollBadge(l) {
+  if (l.src === 'agent' && l.receiptIssued) return '<span style="color:#5fd38d">🧾 ' + _agingEsc(l.method) + ' · הונפקה קבלה (לפי הסוכן)</span>';
   if (l.src === 'agent') return '<span style="color:#ffd27a">⏳ דווח ע״י הסוכן' + (l.method ? ' · ' + _agingEsc(l.method) : '') + ' · ממתין לאימות</span>';
   var t = (l.src === 'both' ? '<span style="color:#5fd38d">✓ אומת</span> · ' : '') + 'קבלה ' + _agingEsc(l.receiptNo);
   if (l.dateSrc === 'משוער') t += ' · <span style="color:#ffb74d">≈ תאריך משוער</span>';
@@ -22911,7 +22913,7 @@ function _agingRenderCollected() {
   };
   if (!k.list.length) h += '<div style="color:#8792b3;text-align:center;padding:24px">אין גבייה רשומה ל' + _agingMonthName(m) + '</div>';
   h += sec('לקוחות — כולל מע״מ', k.reg, '#9fc3f0') + sec('לקוחות אילת — ללא מע״מ', k.eil, '#ffd27a');
-  h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; צ׳ק שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה; מזומן, העברה ואשראי נספרים רק כשהקבלה מופיעה בדוח</div>';
+  h += '<div style="font-size:.7rem;color:#6f7aa0;padding:8px 16px 14px">קבלות עד ' + _agingEsc((d.meta || {}).receiptsImportedAt || '—') + ' · השיוך לחודש לפי תאריך הקבלה בהנה״ח; צ׳ק שהסוכן רשם — לפי יום הרישום עד שמגיעה קבלה; אשראי — כשהסוכן סימן "הונפקה קבלה"; מזומן והעברה רק כשהקבלה מופיעה בדוח</div>';
   body.innerHTML = h;
   document.getElementById('agingFoot').innerHTML = '<div style="display:flex;gap:8px;padding:10px 12px;background:#141a2e;border-top:1px solid #26304d">' +
     '<button onclick="_agingCollectedPdf()" style="flex:1;padding:10px;border-radius:10px;border:none;background:#7b52d6;color:#fff;font-weight:800;cursor:pointer">📄 PDF / שיתוף</button>' +
@@ -22932,7 +22934,7 @@ function _agingCollectedXlsx() {
         var amt = Number(l.amount) || 0;
         rows.push([grp, c.num, c.name, _agingDate(l.date), l.valueDate ? _agingDate(l.valueDate) : '',
           l.src === 'agent' ? 'דווח ע״י הסוכן' + (l.method ? ' · ' + l.method : '') : 'קבלה ' + l.receiptNo,
-          l.src === 'agent' ? 'ממתין לאימות' : (l.src === 'both' ? 'אומת' : 'מהדוח') + (l.dateSrc === 'משוער' ? ' · תאריך משוער' : ''),
+          l.src === 'agent' ? (l.receiptIssued ? 'הונפקה קבלה (לפי הסוכן)' : 'ממתין לאימות') : (l.src === 'both' ? 'אומת' : 'מהדוח') + (l.dateSrc === 'משוער' ? ' · תאריך משוער' : ''),
           amt, Math.round((noVat ? amt : amt / 1.18) * 100) / 100]);
       });
     });
@@ -22979,7 +22981,7 @@ function _agingCollectedPdf() {
       t += '<tr style="background:#eef2fa"><td colspan="3" style="' + td + ';font-weight:800">' + _agingEsc(c.name) + ' · ' + _agingEsc(c.num) + '</td><td style="' + td + ';text-align:left;font-weight:800" dir="ltr">' + _agingMoney(c.total) + '</td></tr>';
       c.lines.forEach(function (l) {
         t += '<tr><td style="' + td + '">' + _agingDate(l.date) + '</td><td style="' + td + '">' + (l.valueDate ? _agingDate(l.valueDate) : '') + '</td><td style="' + td + '">' +
-          (l.src === 'agent' ? 'דווח ע״י הסוכן — ממתין לאימות' : (l.src === 'both' ? '✓ ' : '') + 'קבלה ' + _agingEsc(l.receiptNo) + (l.dateSrc === 'משוער' ? ' (תאריך משוער)' : '')) +
+          (l.src === 'agent' ? 'דווח ע״י הסוכן — ' + (l.receiptIssued ? 'הונפקה קבלה' : 'ממתין לאימות') : (l.src === 'both' ? '✓ ' : '') + 'קבלה ' + _agingEsc(l.receiptNo) + (l.dateSrc === 'משוער' ? ' (תאריך משוער)' : '')) +
           '</td><td style="' + td + ';text-align:left" dir="ltr">' + _agingMoney(l.amount) + '</td></tr>';
       });
     });
@@ -23106,6 +23108,9 @@ function _agingRenderCollect() {
         '<input type="date" value="' + _agingEsc(l.dueDate) + '" onchange="_collect.lines[' + i + '].dueDate=this.value" style="' + inp + '"></div></div>' +
       '<div style="margin-top:8px"><div style="font-size:.72rem;color:#8792b3">' + (isCheck ? "מס' צ'ק / בנק" : 'אסמכתא') + ' (לא חובה)</div>' +
         '<input value="' + _agingEsc(l.ref) + '" oninput="_collect.lines[' + i + '].ref=this.value" style="' + inp + '"></div>' +
+      (l.method === 'כרטיס אשראי' ? '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;padding:8px;border-radius:8px;background:#123323;cursor:pointer;font-size:.8rem">' +
+        '<input type="checkbox"' + (l.receipt ? ' checked' : '') + ' onchange="_collect.lines[' + i + '].receipt=this.checked" style="margin-top:2px">' +
+        '<span><b>הונפקה קבלה מהנה״ח</b><br><span style="color:#8fbfa6;font-size:.72rem">רק כשמסומן — נספר בגבייה בפועל (עמלה). מומלץ לצרף את הקבלה לתיעוד.</span></span></label>' : '') +
       '<div style="display:flex;gap:8px;margin-top:8px;align-items:center">' +
         '<label style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#26335f;cursor:pointer;font-size:.82rem">📷 צילום<input type="file" accept="image/*" capture="environment" onchange="_agingPickFile(' + i + ',this)" style="display:none"></label>' +
         '<label style="flex:1;text-align:center;padding:8px;border-radius:8px;background:#26335f;cursor:pointer;font-size:.82rem">🖼️ גלריה / קובץ<input type="file" accept="image/*,application/pdf" onchange="_agingPickFile(' + i + ',this)" style="display:none"></label></div>' +
@@ -23163,7 +23168,7 @@ function _agingSaveCollect() {
   var id = 'C' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   var body = {action: 'saveCollection', id: id, cust: _aging.num, custName: _aging.name, reportAgent: _aging.agent,
     invoices: c.rows.map(function (r) { return {label: _agingDocLabel(r), type: r.type, sourceNo: r.sourceNo, valueDate: r.valueDate, open: r.open}; }),
-    payments: lines.map(function (l) { return {method: l.method, amount: Number(l.amount), dueDate: l.dueDate, ref: l.ref, file: l.file ? {name: l.file.name, mime: l.file.mime, b64: l.file.b64} : null}; }),
+    payments: lines.map(function (l) { return {method: l.method, amount: Number(l.amount), dueDate: l.dueDate, ref: l.ref, receiptIssued: l.method === 'כרטיס אשראי' && !!l.receipt, file: l.file ? {name: l.file.name, mime: l.file.mime, b64: l.file.b64} : null}; }),
     note: c.note, sendMail: false, sendMarina: false};   // הנה"ח מקבלת הודעה מהסוכן עצמו (_agingShareReceiptPdf עם fin), לא מהשרת
   c.saving = true; _agingRenderCollect();
   var local = {id: id, lines: lines, rows: c.rows, note: c.note};
@@ -23324,7 +23329,7 @@ function _agingShowCollection(id) {
       (col.mailStatus ? '<div style="color:#8792b3;font-size:.76rem">📧 ' + _agingEsc(col.mailStatus) + (col.mailedTo ? ' (' + _agingEsc(col.mailedTo) + ')' : '') + '</div>' : '') +
       '<div style="font-weight:800;margin:10px 0 4px">אמצעי תשלום</div>' +
       (col.payments || []).map(function (p, i) {
-        return '<div style="background:#1b2340;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between"><b>' + _agingEsc(p.method) + (p.ref ? ' #' + _agingEsc(p.ref) : '') + '</b><b dir="ltr" style="color:#5fd38d">' + _agingMoney(p.amount) + ' ₪</b></div>' +
+        return '<div style="background:#1b2340;border-radius:10px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between"><b>' + _agingEsc(p.method) + (p.ref ? ' #' + _agingEsc(p.ref) : '') + (p.receiptIssued ? ' <span style="color:#5fd38d;font-size:.76rem">🧾 הונפקה קבלה</span>' : '') + '</b><b dir="ltr" style="color:#5fd38d">' + _agingMoney(p.amount) + ' ₪</b></div>' +
           '<div style="font-size:.76rem;color:#8792b3">' + (p.method === "צ'ק" ? 'פירעון ' : 'תאריך ') + _agingDate(p.dueDate) + '</div>' +
           (p.fileId ? '<div id="agColFile' + i + '" style="margin-top:6px"><button onclick="_agingViewFile(' + i + ')" style="padding:5px 12px;border-radius:8px;border:1px solid #3d4b78;background:none;color:#9fb4ea;cursor:pointer;font-size:.8rem">📎 הצג ' + (/^image\//.test(p.mime || '') ? 'צילום' : 'קובץ') + '</button></div>' : '') + '</div>';
       }).join('') +
