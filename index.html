@@ -11,7 +11,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://bconnect-catalog.github.io/catalog/og-image.jpg">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BConnect Catalog v48</title>
@@ -1369,7 +1369,7 @@ var BC_AUTH_TTL_DAYS = 7;
 })();
 </script>
 
-<a href="#catalogMain" id="skipToContent" style="position:fixed;top:-100px;left:50%;transform:translateX(-50%);background:#a87fff;color:#fff;padding:10px 20px;border-radius:0 0 10px 10px;font-size:.95rem;font-weight:700;z-index:99999;text-decoration:none;transition:top .2s" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">⬇️ דלג לתוכן הראשי</a>
+<a href="#catalogMain" id="skipToContent" onclick="return _a11ySkip(event)" style="position:fixed;top:-100px;left:50%;transform:translateX(-50%);background:#a87fff;color:#fff;padding:10px 20px;border-radius:0 0 10px 10px;font-size:.95rem;font-weight:700;z-index:99999;text-decoration:none;transition:top .2s" onfocus="this.style.top='0'" onblur="this.style.top='-100px'">⬇️ דלג לתוכן הראשי</a>
 
 <div id="splashOverlay">
   <canvas id="splashCanvas"></canvas>
@@ -1495,13 +1495,13 @@ var BC_AUTH_TTL_DAYS = 7;
     <div class="brands-title">— המותגים שלנו —</div>
     <div class="brands-grid" id="brandsGrid"></div>
   </div>
-  <div style="position:fixed;bottom:8px;left:10px;font-size:.6rem;color:#444;opacity:.55;z-index:10;pointer-events:none;font-family:sans-serif" id="updateDateBadge">
+  <div style="position:fixed;bottom:8px;left:10px;font-size:.6rem;color:#8a8a99;z-index:10;pointer-events:none;font-family:sans-serif" id="updateDateBadge">
     עדכון מלאי: 06.03.2026
   </div>
 </div>
 
 <!-- ══ CATALOG PAGE ══ -->
-<a id="catalogMain" tabindex="-1" aria-hidden="true"></a>
+<a id="catalogMain" tabindex="-1"></a>
 <div class="page" id="page-catalog" role="main">
   <div class="cat-topbar">
   
@@ -1569,7 +1569,7 @@ var BC_AUTH_TTL_DAYS = 7;
   <div class="cats-row" id="cableSubRow" style="display:none"></div>
   <div class="cats-row" id="accessorySubRow" style="display:none"></div>
   <div aria-live="polite" aria-atomic="false" id="a11y-live" class="sr-only"></div>
-  <div class="grid" id="grid" role="main" aria-label="רשימת מוצרים"></div>
+  <div class="grid" id="grid" role="region" aria-label="רשימת מוצרים" tabindex="-1"></div>
   <div style="height:80px"></div>
 </div>
 
@@ -7489,7 +7489,7 @@ function renderCards() {
       : '';
     var _rhCur = (_reorderInfo && _rhStaff) ? ';cursor:pointer' : '';
     return `<div class="card ${qty ? 'has-order' : ''} ${stockCls === 'out' ? 'out' : ''} ${_reorderInfo ? 'reorder-item' : ''}" data-bc="${p.barcode}" role="article" aria-label="${p.name}" tabindex="0">
-      <div class="card-img-area" onclick="openCardFullscreen('${p.barcode}', event.target.src||'')" style="cursor:zoom-in;position:relative">
+      <div class="card-img-area" role="button" tabindex="0" aria-label="הגדלת תמונה" onclick="openCardFullscreen('${p.barcode}', event.target.src||'')" style="cursor:zoom-in;position:relative">
         ${imgHtml}
         ${p.gift_barcode ? getGiftThumbHtml(p) : ''}
         ${p.is_chisel_special && typeof CLEARANCE_CHISEL_LABEL !== 'undefined' && !_isViewOnly ? '<img src="'+CLEARANCE_CHISEL_LABEL+'" style="position:absolute;top:4px;left:4px;width:100px;height:auto;transform:rotate(-12deg);z-index:5;border-radius:4px;box-shadow:2px 2px 6px rgba(0,0,0,.4)" alt="חיסול החיסולים">' : ''}
@@ -7502,14 +7502,14 @@ function renderCards() {
             + _bicons.map(function(ic){
                 var src = BEYER_ICONS[ic] || '';
                 if (!src) return '';
-                return '<img src="'+src+'" style="height:28px;width:auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.4)" title="'+ic+'">';
+                return '<img src="'+src+'" alt="'+ic+'" style="height:28px;width:auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.4)" title="'+ic+'">';
               }).join('')
             + '</div>';
         })()}
         <div class="img-overlay">
           <div class="stock-badge ${stockCls}">${_showComingSoon ? '🔜 חדש בקרוב' : stockLabel}</div>
           ${(_showComingSoon && p.coming_soon_label) ? '<div style="position:absolute;top:28px;right:6px;background:#fff;color:#c62828;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px;border:1px solid #ffcdd2;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.25)">' + p.coming_soon_label + '</div>' : ''}
-          ${p.is_new && !_showComingSoon && !p.clearance_price ? '<div class="new-corner" style="top:' + ((p.promo_name && isPromoActive(p)) || p.price_drop ? '36' : '4') + 'px"><img src="' + (BEYER_ICONS.new||'') + '" style="height:32px;width:auto"></div>' : ''}
+          ${p.is_new && !_showComingSoon && !p.clearance_price ? '<div class="new-corner" style="top:' + ((p.promo_name && isPromoActive(p)) || p.price_drop ? '36' : '4') + 'px"><img src="' + (BEYER_ICONS.new||'') + '" alt="חדש" style="height:32px;width:auto"></div>' : ''}
           <div class="tag-badges">
             ${_isViewOnly ? '' : (
               (p.promo_name === 'מבצע פסח 26' && isPromoActive(p)) ? '<div style="position:absolute;top:4px;left:4px;background:linear-gradient(135deg,#1a5c2a,#2d8a45);border-radius:6px;padding:2px 6px;display:flex;align-items:center;gap:3px;box-shadow:0 1px 4px rgba(0,0,0,.5)"><span style="font-size:.6rem;font-weight:900;color:#fff;white-space:nowrap">🫓 מבצע פסח</span></div>'
@@ -8006,8 +8006,8 @@ function _renderQtySectionBase(p, qty) {
     const statusLabel = _orderBlocked
       ? '<div style="opacity:.6;font-size:.7rem;color:#aaa;text-align:center;padding:6px 0">לא זמין להזמנה</div>'
       : (_comingSoon
-        ? '<div style="opacity:.5;font-size:.7rem;color:#aaa;text-align:center;padding:6px 0">בקרוב במלאי</div>'
-        : '<div style="opacity:.5;font-size:.7rem;color:#aaa;text-align:center;padding:6px 0">אזל מהמלאי</div>');
+        ? '<div class="oos-note">בקרוב במלאי</div>'
+        : '<div class="oos-note">אזל מהמלאי</div>');
     return clearanceHtml + independenceHtml + bonusPanel + statusLabel;
   }
   const hasVal = qty ? ' has-value' : '';
@@ -14658,11 +14658,11 @@ function globalSearch(q) {
     if (SLIDES_IMG && SLIDES_IMG[p.barcode]) {
       const slides = SLIDES_IMG[p.barcode];
       imgHtml = '<div class="gr-img slideshow-wrap" style="cursor:zoom-in" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')">'
-        + slides.map((s,i) => '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '">').join('')
+        + slides.map((s,i) => '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + (i===0 ? String(p.name||'').replace(/"/g,'&quot;') : '') + '">').join('')
         + '</div>';
     } else if (p.images && p.images.length) {
       imgHtml = '<div class="gr-img slideshow-wrap" style="cursor:zoom-in" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')">'
-        + p.images.map((s,i) => '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '">').join('')
+        + p.images.map((s,i) => '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + (i===0 ? String(p.name||'').replace(/"/g,'&quot;') : '') + '">').join('')
         + '</div>';
     } else if (imgSrc) {
       imgHtml = '<div class="gr-img" style="cursor:zoom-in" data-img="' + encodeURIComponent(imgSrc) + '" onclick="event.stopPropagation();lbClickSingle(this)"><img src="' + imgSrc + '" style="width:100%;height:100%;object-fit:contain;border-radius:8px"></div>';
@@ -17971,11 +17971,11 @@ document.addEventListener('click', e => {
 
 
 
-<div id="card-fullscreen-overlay">
+<div id="card-fullscreen-overlay" role="dialog" aria-modal="true" aria-label="תצוגת מוצר מלאה">
   <button id="card-fs-close" onclick="closeCardFullscreen()" ontouchend="event.preventDefault();event.stopPropagation();closeCardFullscreen()" aria-label="סגור תצוגה מלאה">✕</button>
-  <button id="card-fs-share" onclick="shareCard()">📤</button>
-  <div id="card-fs-prev" onclick="navCardFullscreen(-1)">‹</div>
-  <div id="card-fs-next" onclick="navCardFullscreen(1)">›</div>
+  <button id="card-fs-share" onclick="shareCard()" aria-label="שיתוף המוצר">📤</button>
+  <div id="card-fs-prev" role="button" tabindex="0" aria-label="המוצר הקודם" onclick="navCardFullscreen(-1)">‹</div>
+  <div id="card-fs-next" role="button" tabindex="0" aria-label="המוצר הבא" onclick="navCardFullscreen(1)">›</div>
   <div id="card-fs-counter"></div>
   <div id="card-fs-content"></div>
 </div>
@@ -18250,10 +18250,10 @@ document.addEventListener('click', e => {
 #splashSub.visible { opacity: 1; }
 </style>
 
-<div id="lightbox-overlay" onclick="lbBgClick(event)">
+<div id="lightbox-overlay" role="dialog" aria-modal="true" aria-label="גלריית תמונות" onclick="lbBgClick(event)">
   <button id="lightbox-close" onclick="closeLightbox()" aria-label="סגור">✕</button>
-  <button id="lightbox-prev" onclick="lbNav(-1)">›</button>
-  <button id="lightbox-next" onclick="lbNav(1)">‹</button>
+  <button id="lightbox-prev" onclick="lbNav(-1)" aria-label="התמונה הקודמת">›</button>
+  <button id="lightbox-next" onclick="lbNav(1)" aria-label="התמונה הבאה">‹</button>
   <img id="lightbox-img" src="" alt="">
   <div id="lightbox-dots"></div>
   <div id="lightbox-counter"></div>
@@ -19036,8 +19036,8 @@ function a11yToggle(key) {
     var s = JSON.parse(localStorage.getItem('bc_a11y')||'{}');
     s[key] = !s[key];
     localStorage.setItem('bc_a11y', JSON.stringify(s));
-    document.body.classList.toggle('a11y-high-contrast', !!s.highContrast);
-    document.body.classList.toggle('a11y-grayscale', !!s.grayscale);
+    document.documentElement.classList.toggle('a11y-high-contrast', !!s.highContrast);
+    document.documentElement.classList.toggle('a11y-grayscale', !!s.grayscale);
     document.body.classList.toggle('a11y-underline-links', !!s.underlineLinks);
     document.body.classList.toggle('a11y-no-anim', !!s.noAnim);
   } catch(e) {}
@@ -19046,7 +19046,7 @@ function a11yResetAll() {
   try {
     localStorage.removeItem('bc_a11y');
     document.documentElement.style.fontSize = '';
-    ['a11y-high-contrast','a11y-grayscale','a11y-underline-links','a11y-no-anim'].forEach(function(c){ document.body.classList.remove(c); });
+    ['a11y-high-contrast','a11y-grayscale','a11y-underline-links','a11y-no-anim'].forEach(function(c){ document.body.classList.remove(c); document.documentElement.classList.remove(c); });
   } catch(e) {}
 }
 function showA11yStatement() { openA11yStatement(); }
@@ -19095,44 +19095,45 @@ function closeA11yStatement() {
   <div style="background:#1a1a2e;border:2px solid #a87fff;border-radius:16px;padding:24px;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;direction:rtl">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <h2 style="margin:0;color:#a87fff;font-size:1.1rem">📄 הצהרת נגישות</h2>
-      <button onclick="document.getElementById('a11yStatement').style.display='none'" aria-label="סגור" style="background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer">✕</button>
+      <button onclick="closeA11yStatement()" aria-label="סגור" style="background:none;border:none;color:#aaa;font-size:1.4rem;cursor:pointer">✕</button>
     </div>
     <div style="color:#ccc;font-size:.85rem;line-height:1.7">
-      <p><strong style="color:#fff">BConnect Technologies</strong> רואה חשיבות עליונה בנגישות הדיגיטלית ופועלת להנגיש את הקטלוג לכלל המשתמשים, לרבות אנשים עם מוגבלויות.</p>
-      <p>אנו פועלים בהתאם לתקן <strong style="color:#a87fff">WCAG 2.1 ברמה AA</strong> (ת״י 5568), כנדרש בתקנות שוויון זכויות לאנשים עם מוגבלות (ישראל).</p>
-      <p><strong style="color:#fff">התאמות נגישות שבוצעו:</strong></p>
+      <p><strong style="color:#fff">BConnect Technologies</strong> רואה חשיבות בנגישות הדיגיטלית ופועלת להנגיש את הקטלוג לכלל המשתמשים, לרבות אנשים עם מוגבלות.</p>
+      <p>הקטלוג הותאם לדרישות תקן ישראלי <strong style="color:#c9b3ff">ת״י 5568</strong> המבוסס על <strong style="color:#c9b3ff">WCAG 2.1 ברמה AA</strong>, בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע״ג-2013.</p>
+      <p><strong style="color:#fff">התאמות שבוצעו:</strong></p>
       <ul style="padding-right:16px;line-height:2">
-        <li>ניווט מלא במקלדת</li>
-        <li>תמיכה בקוראי מסך (ARIA labels, roles, live regions)</li>
-        <li>טקסט חלופי לכל התמונות</li>
-        <li>סמנטיקת HTML5 תקנית</li>
-        <li>ניגודיות צבעים עמידה בתקן</li>
-        <li>התאמת גודל טקסט (עד 200%)</li>
-        <li>מצב ניגודיות גבוהה</li>
-        <li>עצירת אנימציות</li>
-        <li>תמיכה ב-prefers-reduced-motion</li>
-        <li>דילוג לתוכן הראשי</li>
-        <li>מנהל focus במודלים ודיאלוגים</li>
+        <li>ניווט במקלדת בכל הפעולות העיקריות, כולל פתיחת תמונה במסך מלא</li>
+        <li>מקש Esc סוגר חלונות, והמקלדת נשארת בתוך חלון פתוח</li>
+        <li>קישור "דלג לתוכן הראשי"</li>
+        <li>תוויות ותפקידים לקוראי מסך (ARIA) והכרזות על שינויים</li>
+        <li>טקסט חלופי לתמונות המוצרים ולסמלים</li>
+        <li>הגדלת טקסט מתוך תפריט הנגישות, וזום חופשי בטלפון</li>
+        <li>ניגודיות צבעים בתקן, ומצבי ניגודיות גבוהה וגווני אפור</li>
+        <li>הדגשת קישורים ועצירת אנימציות, כולל כיבוד הגדרת "הפחתת תנועה" במכשיר</li>
       </ul>
-      <p><strong style="color:#fff">אמצעי נגישות ידועים שטרם הושלמו:</strong></p>
-      <ul style="padding-right:16px;line-height:2;color:#aaa">
-        <li>בדיקת נגישות מלאה על ידי מורשה נגישות מוסמך</li>
+      <p><strong style="color:#fff">מגבלות ידועות:</strong></p>
+      <ul style="padding-right:16px;line-height:2;color:#bbb">
+        <li>חלק מתמונות המוצרים כוללות טקסט שיווקי של היצרן שאינו מוקרא במלואו</li>
+        <li>קבצי PDF ו-Excel המופקים מהקטלוג אינם מונגשים במלואם</li>
       </ul>
-      <p><strong style="color:#fff">פנייה בנושא נגישות:</strong><br>
-      נתקלת בבעיית נגישות? נשמח לעזור:<br>
-      📧 <a href="/cdn-cgi/l/email-protection#a7cec9c1c8e7c5c4c8c9c9c2c4d389c4c889cecb" style="color:#7c4fff"><span class="__cf_email__" data-cfemail="d6bfb8b0b996b4b5b9b8b8b3b5a2f8b5b9f8bfba">[email&#160;protected]</span></a><br>
-      <span style="font-size:.8rem;color:#888">נענה תוך 5 ימי עבודה</span></p>
-      <p style="color:#888;font-size:.78rem;border-top:1px solid #333;padding-top:8px;margin-top:8px">
-        הצהרת נגישות עודכנה: מרץ 2026 | גרסה 1.0
+      <p><strong style="color:#fff">רכז נגישות ופניות:</strong><br>
+      נתקלת בבעיית נגישות? נשמח לשמוע ולתקן.<br>
+      רכז הנגישות: מרקו ארביבו<br>
+      📧 <a href="mailto:Marko@bconnect.co.il" style="color:#c9b3ff">Marko@bconnect.co.il</a><br>
+      📧 <a href="mailto:info@bconnect.co.il" style="color:#c9b3ff">info@bconnect.co.il</a><br>
+      <span style="font-size:.8rem;color:#aaa">נענה תוך 5 ימי עבודה</span></p>
+      <p style="color:#aaa;font-size:.78rem;border-top:1px solid #333;padding-top:8px;margin-top:8px">
+        הצהרת הנגישות עודכנה: נובמבר 2026
       </p>
     </div>
   </div>
 </div>
 
 <style id="a11yStyles">
-body.a11y-high-contrast { filter: contrast(150%); }
-body.a11y-grayscale { filter: grayscale(100%); }
-body.a11y-high-contrast.a11y-grayscale { filter: contrast(150%) grayscale(100%); }
+/* הפילטר על html ולא על body: פילטר על body הופך אותו לבסיס של position:fixed והסרגלים הקבועים נגללים עם הדף */
+html.a11y-high-contrast { filter: contrast(150%); }
+html.a11y-grayscale { filter: grayscale(100%); }
+html.a11y-high-contrast.a11y-grayscale { filter: contrast(150%) grayscale(100%); }
 body.a11y-underline-links a { text-decoration: underline !important; }
 body.a11y-no-anim *, body.a11y-no-anim *::before, body.a11y-no-anim *::after {
   animation-duration: 0.001ms !important;
@@ -19144,9 +19145,65 @@ body.a11y-no-anim *, body.a11y-no-anim *::before, body.a11y-no-anim *::after {
   outline-offset: 2px;
 }
 #skipToContent:focus { top: 0 !important; }
+/* נגישות 01/11/26 */
+.oos-note{font-size:.7rem;color:#b4b4c2;text-align:center;padding:6px 0}
+html.sunmode .oos-note{color:#55556a}
+.card-name span[style*="#e74c3c"]{color:#ff6b5e !important}
+html.sunmode .card-name span[style*="#e74c3c"]{color:#c0392b !important}
+button,a,[role="button"],input,select{touch-action:manipulation}
+.card-img-area:focus-visible,#card-fs-prev:focus-visible,#card-fs-next:focus-visible{outline:3px solid #a87fff;outline-offset:2px}
 </style>
+<script>
+// ── נגישות מקלדת (01/11/26) ──
+// Enter/רווח מפעילים כל role=button שאינו <button>; Tab לא יוצא מחלון פתוח; בסגירה הפוקוס חוזר למקום.
+(function () {
+  var FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select,textarea,[tabindex]:not([tabindex="-1"])';
+  var lastOutside = null;
+  function shown(el) {
+    if (!el || !el.isConnected) return false;
+    var cs = getComputedStyle(el);
+    return cs.display !== 'none' && cs.visibility !== 'hidden' && el.getClientRects().length > 0;
+  }
+  function openDialog() {
+    var list = document.querySelectorAll('[role="dialog"][aria-modal="true"]'), top = null;
+    for (var i = 0; i < list.length; i++) if (shown(list[i])) top = list[i];
+    return top;
+  }
+  window._a11ySkip = function (e) {
+    var t = shown(document.getElementById('page-catalog')) ? document.getElementById('grid') : document.getElementById('brandsGrid');
+    if (!t) return true;
+    if (!t.hasAttribute('tabindex')) t.setAttribute('tabindex', '-1');
+    t.focus(); if (e) e.preventDefault(); return false;
+  };
+  document.addEventListener('focusin', function (e) {
+    var d = openDialog();
+    if (!d) { lastOutside = e.target; return; }
+    if (!d.contains(e.target)) { var f = d.querySelectorAll(FOCUSABLE); for (var i = 0; i < f.length; i++) if (shown(f[i])) { f[i].focus(); return; } }
+  });
+  document.addEventListener('keydown', function (e) {
+    var t = e.target;
+    if ((e.key === 'Enter' || e.key === ' ') && t && t.getAttribute && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON' && t.tagName !== 'A') {
+      e.preventDefault(); t.click(); return;
+    }
+    if (e.key !== 'Tab') return;
+    var d = openDialog();
+    if (!d) {
+      // חלון נסגר והפוקוס נפל לגוף הדף — חוזרים לכפתור שפתח אותו
+      if ((document.activeElement === document.body || !document.activeElement) && lastOutside && shown(lastOutside)) { e.preventDefault(); lastOutside.focus(); }
+      return;
+    }
+    var f = [].filter.call(d.querySelectorAll(FOCUSABLE), shown);
+    if (!f.length) { e.preventDefault(); return; }
+    var first = f[0], last = f[f.length - 1];
+    if (!d.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  });
+})();
+</script>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+
+
 <script>
 
 // ══════════════════════════════════════════════════
@@ -19166,8 +19223,8 @@ body.a11y-no-anim *, body.a11y-no-anim *::before, body.a11y-no-anim *::after {
     // font size
     document.documentElement.style.fontSize = state.fontSize === 0 ? '' : (100 + state.fontSize * 10) + '%';
     // classes
-    document.body.classList.toggle('a11y-high-contrast', !!state.highContrast);
-    document.body.classList.toggle('a11y-grayscale',      !!state.grayscale);
+    document.documentElement.classList.toggle('a11y-high-contrast', !!state.highContrast);
+    document.documentElement.classList.toggle('a11y-grayscale',      !!state.grayscale);
     document.body.classList.toggle('a11y-underline-links',!!state.underlineLinks);
     document.body.classList.toggle('a11y-no-anim',        !!state.noAnim);
     // button states
@@ -19182,8 +19239,8 @@ body.a11y-no-anim *, body.a11y-no-anim *::before, body.a11y-no-anim *::after {
       if (!el) return;
       var on = !!state[btns[id]];
       el.setAttribute('aria-pressed', on ? 'true' : 'false');
-      el.style.background = on ? '#a87fff' : 'rgba(168,127,255,.15)';
-      el.style.color       = on ? '#fff'    : '#a87fff';
+      el.style.background = on ? '#5b2bd6' : '#f0ebff';
+      el.style.color       = on ? '#fff'    : '#3a0099';
     });
   }
 
@@ -20678,7 +20735,7 @@ function openDescModal(bc, e) {
   }
 
   var overlay = document.createElement('div');
-  overlay.className = 'spec-overlay';
+  overlay.className = 'spec-overlay'; overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true');
   overlay.onclick = function(ev){ if(ev.target===overlay) closeDescModal(); };
 
   var descHtml = '';
@@ -20726,7 +20783,7 @@ function openComparisonModal(bc, e) {
   if (!cmp) return;
 
   var overlay = document.createElement('div');
-  overlay.className = 'spec-overlay';
+  overlay.className = 'spec-overlay'; overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true');
   overlay.onclick = function(ev){ if(ev.target===overlay) closeComparisonModal(); };
 
   overlay.innerHTML = '<div class="spec-modal" style="max-width:600px">' +
@@ -21842,7 +21899,7 @@ function openSpecModal(bc, e) {
   }
 
   var overlay = document.createElement('div');
-  overlay.className = 'spec-overlay';
+  overlay.className = 'spec-overlay'; overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true');
   overlay.onclick = function(ev){ if(ev.target===overlay) closeSpecModal(); };
 
   var specsHtml = '';
