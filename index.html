@@ -1598,7 +1598,8 @@ var BC_AUTH_TTL_DAYS = 7;
       <option value="אביעד">אביעד</option>
       <option value="יונה">יונה</option>
       <option value="וילי">וילי</option>
-      <option value="מיכל" data-mgr="1" hidden>מיכל</option>
+      <option value="מיכל" data-mgr="michalr" hidden>מיכל</option>
+      <option value="יותם" data-mgr="yotam" hidden>יותם</option>
     </select>
     <select class="modal-input" id="deliverySelect" style="flex:1;margin:0;font-size:.8rem;padding:6px 10px" onchange="updateDeliveryOption()">
       <option value="">-- בחר משלוח --</option>
@@ -1845,11 +1846,11 @@ function _applyAgentSelect(auth) {
   sel.style.pointerEvents = '';
   sel.style.opacity = '';
   sel.title = '';
-  // מיכל (מנהלת) מופיעה כסוכנת מטפלת רק כשהיא עצמה מחוברת — כדי שהזמנות הניסיון שלה יגיעו אליה
+  // מנהלים (מיכל, יותם) מופיעים כסוכן מטפל רק כשהם עצמם מחוברים — כדי שההזמנות שלהם יגיעו אליהם
   var _me = auth ? [auth.user, auth.name].map(function (t) { return String(t || '').trim().toLowerCase(); }) : [];
   [].forEach.call(sel.querySelectorAll('option[data-mgr]'), function (o) {
-    var v = o.value.toLowerCase();
-    o.hidden = !_me.some(function (t) { return t === v || t.indexOf(v + ' ') === 0 || t.indexOf('michalr') === 0; });
+    var v = o.value.toLowerCase(), u = o.getAttribute('data-mgr');
+    o.hidden = !_me.some(function (t) { return t === v || t.indexOf(v + ' ') === 0 || t === u || t.indexOf(u + '@') === 0; });
   });
   if (!auth) return;
 
@@ -9200,7 +9201,8 @@ function doSendEmail() {
     'יונה': 'yona@bconnect.co.il',
     'אביעד': 'Aviads@bconnect.co.il',
     'וילי': 'Villy@bconnect.co.il',
-    'מיכל': 'michalr@bconnect.co.il'
+    'מיכל': 'michalr@bconnect.co.il',
+    'יותם': 'yotam@bconnect.co.il'
   };
   const toEmail = agentEmails[agent] || OWNER_EMAIL;
   const encodedBody = encodeURIComponent(body);
@@ -13910,7 +13912,8 @@ function doSendWhatsApp() {
     'יונה': '972544449587',
     'אביעד': '972502572863',
     'וילי': '972544878315',
-    'מיכל': '972507359893'
+    'מיכל': '972507359893',
+    'יותם': '972505727380'
   };
   const toPhone = agentPhones[agent] || OWNER_PHONE;
   _openWhatsApp(toPhone, text);
