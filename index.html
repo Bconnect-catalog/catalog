@@ -10181,8 +10181,8 @@ function _filterAgentCustomers(query) {
   var q = query.trim().toLowerCase();
   var visibleRows = [];
   rows.forEach(function(row){
-    var name = row.querySelector('span') ? row.querySelector('span').textContent.toLowerCase() : '';
-    var visible = !q || name.indexOf(q) !== -1;
+    var name = row.querySelector('span') ? row.querySelector('span').textContent : '';
+    var visible = !q || _custMatchScore({ name: name }, q) >= 0;
     row.style.display = visible ? '' : 'none';
     if (visible) visibleRows.push(row);
   });
@@ -10235,11 +10235,18 @@ function _applyAgentCustomer() {
   }
   // חובה: re-render כדי לעדכן תצוגת הנחה קבועה ובונוס
   if (typeof renderCards === 'function') renderCards();
+  // הגיע מכפתור ייבוא מאקסל — ממשיכים לבחירת הקובץ (עדיין בתוך הלחיצה, כדי שהדפדפן יאפשר)
+  if (window._xlAfterCustomer) {
+    window._xlAfterCustomer = false;
+    if (name.trim()) openXlOrderImport();
+    else alert('צריך לבחור לקוח לפני ייבוא הזמנה מאקסל.');
+  }
 }
 
 function _skipAgentCustomer() {
   var pop = document.getElementById('agentCustomerPopup');
   if (pop) pop.remove();
+  if (window._xlAfterCustomer) { window._xlAfterCustomer = false; alert('צריך לבחור לקוח לפני ייבוא הזמנה מאקסל.'); }
 }
 
 // איפוס הדגל כשהעגלה מתרוקנת — כך פופאפ יעלה שוב בהזמנה הבאה
@@ -11812,6 +11819,16 @@ function restoreDraft() {
 function openXlOrderImport() {
   if (!_isAgentOrAdmin() && !adminMode) return;
   if (typeof XLSX === 'undefined') { alert('ספריית האקסל לא נטענה — רענן את הדף ונסה שוב.'); return; }
+  // חובה לקוח לפני ייבוא — אם עוד לא נבחר, פותחים את חלונית הלקוח וממשיכים ממנה
+  if (!((document.getElementById('customerName') || {}).value || '').trim()) {
+    window._xlAfterCustomer = true;
+    _showAgentCustomerPopup();
+    setTimeout(function () {
+      var sub = document.querySelector('#agentCustomerPopup [style*="margin-bottom:16px"]');
+      if (sub) { sub.textContent = '📥 לפני ייבוא ההזמנה מאקסל — בחר לקוח'; sub.style.color = '#ffb74d'; }
+    }, 0);
+    return;
+  }
   var inp = document.getElementById('xlImportFile');
   if (!inp) {
     inp = document.createElement('input');
@@ -19770,6 +19787,26 @@ updateMemorialFlags();
 })();
 
 // ══ Customer Autocomplete ══
+// חיפוש לקוח (04/11/26): כל מילה שהוקלדה צריכה להופיע בשם — בלי תלות בסדר, במקפים,
+// בגרשיים או ברווחים כפולים ("אול מובייל אילת" מוצא את "אול מובייל - אילת").
+// מחזיר -1 = לא מתאים; 0 = השם מתחיל בחיפוש; 1 = מתאים
+function _custNormName(t) {
+  return String(t || '').toLowerCase().replace(/[\-–—_,.()"'`״׳\/\\|]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function _custMatchScore(u, q) {
+  var nq = _custNormName(q); if (!nq) return 1;
+  var hay = _custNormName((u.name || '') + ' ' + (u.user || '') + ' ' + (u.pass || u.num || ''));
+  var words = nq.split(' ');
+  for (var i = 0; i < words.length; i++) if (hay.indexOf(words[i]) === -1) return -1;
+  return _custNormName(u.name).indexOf(nq) === 0 ? 0 : 1;
+}
+function _custMatches(customers, val, limit) {
+  return customers.map(function (u) { return { u: u, s: _custMatchScore(u, val) }; })
+    .filter(function (x) { return x.s >= 0; })
+    .sort(function (a, b) { return a.s - b.s || String(a.u.name).localeCompare(String(b.u.name), 'he'); })
+    .slice(0, limit || 15).map(function (x) { return x.u; });
+}
+
 function getCustomersForAgent() {
   try {
     var auth = JSON.parse(sessionStorage.getItem('bc_auth') || '{}');
@@ -19789,21 +19826,12 @@ function customerAutoComplete(input) {
   if (!dd) return;
   if (val.length < 1) { dd.style.display = 'none'; return; }
 
-  var customers = getCustomersForAgent();
-  // מיון לפי קרבה — startsWith ראשון, אח"כ includes
-  var q = val.toLowerCase();
-  var matches = customers.filter(function(u) {
-    return u.name.toLowerCase().includes(q) || (u.user||'').toLowerCase().includes(q);
-  }).sort(function(a,b) {
-    var as = a.name.toLowerCase().startsWith(q) ? 0 : 1;
-    var bs = b.name.toLowerCase().startsWith(q) ? 0 : 1;
-    return as - bs;
-  }).slice(0, 8);
+  var matches = _custMatches(getCustomersForAgent(), val, 15);
 
   if (!matches.length) { dd.style.display = 'none'; return; }
 
   dd.innerHTML = matches.map(function(u, i) {
-    return '<div class="customer-dropdown-item" data-name="' + u.name.replace(/"/g,'&quot;') + '" data-num="' + (u.pass||'') + '" onmousedown="customerAutoCompleteSelect(\'' + u.name.replace(/'/g,"\'") + '\',\'' + (u.pass||'') + '\')">' +
+    return '<div class="customer-dropdown-item" data-name="' + String(u.name).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;') + '" data-num="' + (u.pass||'') + '" onmousedown="customerAutoCompleteSelect(this.getAttribute(\'data-name\'),this.getAttribute(\'data-num\'))">' +
       '<span>' + u.name + '</span>' +
       '<span class="cust-num">' + (u.pass||'') + '</span>' +
     '</div>';
@@ -19868,21 +19896,15 @@ function agentCustAutoComplete(input) {
   var dd = document.getElementById('_agentCustDropdown');
   if (!dd) return;
   if (val.length < 1) { dd.style.display = 'none'; return; }
-  var customers = getCustomersForAgent();
-  var q = val.toLowerCase();
-  var matches = customers.filter(function(u) {
-    return u.name.toLowerCase().includes(q) || (u.user||'').toLowerCase().includes(q);
-  }).sort(function(a,b) {
-    return (a.name.toLowerCase().startsWith(q) ? 0 : 1) - (b.name.toLowerCase().startsWith(q) ? 0 : 1);
-  }).slice(0, 8);
+  var matches = _custMatches(getCustomersForAgent(), val, 15);
 
   if (!matches.length) { dd.style.display = 'none'; return; }
   _agentAutoIdx = -1;
   dd.innerHTML = matches.map(function(u) {
     return '<div class="customer-dropdown-item"'
-      + ' data-name="' + u.name.replace(/"/g,'&quot;') + '"'
+      + ' data-name="' + String(u.name).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;') + '"'
       + ' data-num="' + (u.pass||'') + '"'
-      + ' onmousedown="agentCustSelect(\'' + u.name.replace(/'/g,"\'") + '\',\'' + (u.pass||'') + '\')">'
+      + ' onmousedown="agentCustSelect(this.getAttribute(\'data-name\'),this.getAttribute(\'data-num\'))">'
       + '<span>' + u.name + '</span>'
       + '<span class="cust-num">' + (u.pass||'') + '</span>'
       + '</div>';
