@@ -739,6 +739,8 @@ select.modal-input option{background:#0e1828;color:#ffffff}
    הבהיר שהיו להם נועדו לרקע כהה ולא נראו עליו. */
 .global-search-scan{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(var(--br),1);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:4px;opacity:.9}
 .global-search-scan:hover{opacity:1}
+.global-search-xl{position:absolute;right:46px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;padding:4px;font-size:1.15rem;line-height:1}
+.global-search-field.has-xl .global-search-box{padding-right:84px}
 .global-search-clear{position:absolute;left:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9db4d0;font-size:1.1rem;cursor:pointer;padding:0;display:none}
 /* ══ רשימת תוצאות החיפוש — לבנה ══ (11/09/26)
    נבנתה במקור לרקע כהה: טקסט בהיר, ירוק זוהר עם הילה, ותיבות תמונה כהות.
@@ -1464,6 +1466,7 @@ var BC_AUTH_TTL_DAYS = 7;
         <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
       </svg>
     </button>
+    <button class="global-search-xl" id="xlImportBtnHome" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל" aria-label="ייבוא הזמנה מקובץ אקסל">📥</button>
     <button class="global-search-clear" id="globalSearchClear" onclick="clearGlobalSearch()" aria-label="נקה חיפוש">✕</button>
     </div>
     <div class="global-results" id="globalResults"></div>
@@ -1843,7 +1846,11 @@ function _applyAgentSelect(auth) {
     try { auth = JSON.parse(sessionStorage.getItem('bc_auth') || 'null'); } catch(e) { auth = null; }
   }
   // כפתור ייבוא הזמנה מאקסל — לסוכן/מנהל בלבד
-  try { var _xb = document.getElementById('xlImportBtn'); if (_xb) _xb.style.display = (auth && (auth.role === 'agent' || auth.role === 'admin')) ? 'flex' : 'none'; } catch(e) {}
+  try {
+    var _xlOn = !!(auth && (auth.role === 'agent' || auth.role === 'admin'));
+    ['xlImportBtn', 'xlImportBtnHome'].forEach(function (id) { var b = document.getElementById(id); if (b) b.style.display = _xlOn ? 'flex' : 'none'; });
+    var _xf = document.getElementById('xlImportBtnHome'); if (_xf && _xf.parentNode) _xf.parentNode.classList.toggle('has-xl', _xlOn);
+  } catch(e) {}
 
   // ברירת מחדל: פתוח לבחירה. הנעילה נקבעת רק אם באמת נבחר סוכן.
   sel.style.pointerEvents = '';
