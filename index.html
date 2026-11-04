@@ -11838,6 +11838,10 @@ function _xlNorm(v) {
   return s.replace(/^'+/, '');
 }
 
+// כותרת שהיא בוודאות לא כמות להזמנה (מחיר, עלות, יתרת מלאי וכו')
+var _XL_NOT_QTY = /מחיר|עלות|price|cost|סה"כ|סכום|total|מספר|תאריך|מבצע|יתרה|מלאי|stock|ברקוד|barcode|מק"ט|קוד/i;
+var _XL_QTY = /כמות|הזמנה|להזמנה|qty|quantity|order|יח'|יחידות|pcs/i;
+
 function _xlImportParse(wb, fname) {
   var byBc = {}, byCode = {};
   ALL_PRODUCTS.forEach(function (p) {
@@ -11850,69 +11854,95 @@ function _xlImportParse(wb, fname) {
     var s = _xlNorm(v); if (!s) return null;
     return byBc[s] || byBc[s.replace(/^0+/, '')] || byCode[s.toLowerCase()] || null;
   };
-  // בוחרים את הגיליון והעמודה עם הכי הרבה התאמות
-  var best = null;
+  // לכל גיליון: עמודת הברקוד = העמודה עם הכי הרבה התאמות לקטלוג
+  var sheets = [];
   wb.SheetNames.forEach(function (sn) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: '' });
     var hits = {};
     rows.forEach(function (r) { r.forEach(function (v, c) { if (find(v)) hits[c] = (hits[c] || 0) + 1; }); });
-    Object.keys(hits).forEach(function (c) {
-      if (!best || hits[c] > best.hits) best = { sheet: sn, rows: rows, col: +c, hits: hits[c] };
-    });
+    var bc = -1;
+    Object.keys(hits).forEach(function (c) { if (bc < 0 || hits[c] > hits[bc]) bc = +c; });
+    if (bc >= 0) sheets.push({ name: sn, rows: rows, bcCol: bc, hits: hits[bc] });
   });
-  if (!best) { alert('לא נמצא בקובץ אף ברקוד או מק"ט שקיים בקטלוג.'); return; }
-  var rows = best.rows, bcCol = best.col;
-  var firstData = -1;
+  if (!sheets.length) { alert('לא נמצא בקובץ אף ברקוד או מק"ט שקיים בקטלוג.'); return; }
+  // גיליון ברירת מחדל: זה שיש בו עמודת הזמנה עם כמויות; אחרת זה עם הכי הרבה התאמות
+  var st = { fname: fname, find: find, sheets: sheets, si: 0, qtyCol: null };
+  var bestScore = -1;
+  sheets.forEach(function (sh, i) {
+    var a = _xlAutoQty(sh, find);
+    var sc = (a.byHeader ? 100000 : 0) + sh.hits;
+    if (sc > bestScore) { bestScore = sc; st.si = i; }
+  });
+  _xlImportBuild(st);
+}
+
+// כותרות העמודות + זיהוי אוטומטי של עמודת הכמות בגיליון
+function _xlAutoQty(sh, find) {
+  var rows = sh.rows, bcCol = sh.bcCol, firstData = 0;
   for (var k = 0; k < rows.length; k++) { if (find((rows[k] || [])[bcCol])) { firstData = k; break; } }
-  var dataRows = rows.filter(function (r) { return find(r[bcCol]); });
-  // עמודת כמות: קודם לפי כותרת (בשורות שמעל הנתונים), אחרת העמודה המספרית השלמה
-  var qtyCol = -1;
-  for (var h = Math.max(0, firstData - 5); h < firstData && qtyCol < 0; h++) {
-    (rows[h] || []).forEach(function (v, c) {
-      if (qtyCol < 0 && c !== bcCol && /כמות|כמ'|qty|quantity|יח'|יחידות|pcs/i.test(String(v))) qtyCol = c;
-    });
+  var hdr = {}, ncol = 0;
+  rows.forEach(function (r) { if (r.length > ncol) ncol = r.length; });
+  // שורת הכותרות = השורה הקרובה מעל הנתונים שבעמודת הברקוד שלה יש טקסט (לא מספר)
+  for (var h = firstData - 1; h >= Math.max(0, firstData - 6); h--) {
+    var hv = (rows[h] || [])[bcCol];
+    if (typeof hv === 'string' && hv.trim() && !/^\d+$/.test(hv.trim())) {
+      (rows[h] || []).forEach(function (v, c) { if (String(v).trim()) hdr[c] = String(v).trim(); });
+      break;
+    }
+  }
+  var qtyCol = -1, byHeader = false;
+  for (var c = 0; c < ncol && qtyCol < 0; c++) {
+    if (c !== bcCol && hdr[c] && _XL_QTY.test(hdr[c]) && !_XL_NOT_QTY.test(hdr[c])) { qtyCol = c; byHeader = true; }
   }
   if (qtyCol < 0) {
-    var hdr = {};
-    for (var h2 = Math.max(0, firstData - 5); h2 < firstData; h2++)
-      (rows[h2] || []).forEach(function (v, c) { hdr[c] = (hdr[c] || '') + ' ' + v; });
     var score = {};
-    dataRows.forEach(function (r) {
+    rows.slice(firstData).forEach(function (r) {
+      if (!find(r[bcCol])) return;
       r.forEach(function (v, c) {
-        if (c === bcCol || /מחיר|price|סה"כ|סכום|total|ברקוד|barcode|מק"ט/i.test(hdr[c] || '')) return;
+        if (c === bcCol || _XL_NOT_QTY.test(hdr[c] || '')) return;
         var n = typeof v === 'number' ? v : (/^\s*\d+\s*$/.test(String(v)) ? +v : NaN);
         if (n > 0 && n <= 10000 && Math.floor(n) === n) score[c] = (score[c] || 0) + 1;
       });
     });
     Object.keys(score).forEach(function (c) { if (qtyCol < 0 || score[c] > score[qtyCol]) qtyCol = +c; });
   }
-  if (qtyCol < 0) { alert('מצאתי ברקודים, אבל לא עמודת כמות. הוסף לקובץ עמודה בשם "כמות" ונסה שוב.'); return; }
+  return { firstData: firstData, hdr: hdr, ncol: ncol, qtyCol: qtyCol, byHeader: byHeader };
+}
 
-  var items = {}, order = [], unmatched = [], zero = 0;
-  for (var i = firstData; i < rows.length; i++) {
-    var r = rows[i] || [];
-    var raw = _xlNorm(r[bcCol]);
-    var q = parseFloat(String(r[qtyCol]).replace(/,/g, ''));
-    var p = find(r[bcCol]);
-    if (!p) {
-      // שורה עם ערך דמוי-ברקוד וכמות שלא נמצאה בקטלוג — לדיווח
-      if (raw && q > 0 && /^[\w\-]{5,}$/.test(raw)) {
-        var nm = r.filter(function (v, c) { return c !== bcCol && c !== qtyCol && typeof v === 'string' && /[א-תA-Za-z]{3}/.test(v); })[0] || '';
-        unmatched.push({ bc: raw, qty: q, name: String(nm).slice(0, 60) });
+function _xlImportBuild(st) {
+  var sh = st.sheets[st.si], find = st.find, rows = sh.rows, bcCol = sh.bcCol;
+  var a = _xlAutoQty(sh, find);
+  var qtyCol = (st.qtyCol !== null && st.qtyCol !== bcCol) ? st.qtyCol : a.qtyCol;
+  var items = {}, order = [], unmatched = [];
+  if (qtyCol >= 0) {
+    for (var i = a.firstData; i < rows.length; i++) {
+      var r = rows[i] || [];
+      var raw = _xlNorm(r[bcCol]);
+      var q = parseFloat(String(r[qtyCol]).replace(/,/g, ''));
+      var p = find(r[bcCol]);
+      if (!p) {
+        // שורה עם ערך דמוי-ברקוד וכמות שלא נמצאה בקטלוג — לדיווח
+        if (raw && q > 0 && /^[\w\-]{5,}$/.test(raw)) {
+          var nm = r.filter(function (v, c) { return c !== bcCol && c !== qtyCol && typeof v === 'string' && /[א-תA-Za-z]{3}/.test(v); })[0] || '';
+          unmatched.push({ bc: raw, qty: q, name: String(nm).slice(0, 60) });
+        }
+        continue;
       }
-      continue;
+      if (!(q > 0)) continue;
+      q = Math.round(q);
+      if (!items[p.barcode]) { items[p.barcode] = 0; order.push(p.barcode); }
+      items[p.barcode] += q;
     }
-    if (!(q > 0)) { zero++; continue; }
-    q = Math.round(q);
-    if (!items[p.barcode]) { items[p.barcode] = 0; order.push(p.barcode); }
-    items[p.barcode] += q;
   }
-  if (!order.length) { alert('הברקודים נמצאו, אבל אין בעמודת הכמות אף כמות חיובית.'); return; }
-  _xlImportPreview({ fname: fname, sheet: best.sheet, items: items, order: order, unmatched: unmatched, zero: zero });
+  var cols = [];
+  for (var c = 0; c < a.ncol; c++) if (c !== bcCol) cols.push({ c: c, label: a.hdr[c] || ('עמודה ' + XLSX.utils.encode_col(c)) });
+  _xlImportPreview({ st: st, fname: st.fname, sheet: sh.name, items: items, order: order, unmatched: unmatched,
+                     qtyCol: qtyCol, cols: cols, bcLabel: a.hdr[bcCol] || ('עמודה ' + XLSX.utils.encode_col(bcCol)) });
 }
 
 function _xlImportPreview(d) {
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var old = document.getElementById('xlImportOverlay'); if (old) old.remove();
   var units = 0, over = 0;
   var lines = d.order.map(function (bc) {
     var p = ALL_PRODUCTS.find(function (x) { return x.barcode === bc; });
@@ -11930,24 +11960,41 @@ function _xlImportPreview(d) {
   var un = d.unmatched.length ? '<div style="margin-top:10px;color:#ff8a65;font-weight:700">⚠️ ' + d.unmatched.length + ' שורות לא נמצאו בקטלוג (לא ייכנסו):</div>' +
     '<div style="font-size:.75rem;max-height:110px;overflow:auto;background:rgba(255,138,101,.08);border-radius:8px;padding:6px">' +
     d.unmatched.map(function (u) { return esc(u.bc) + ' × ' + u.qty + (u.name ? ' — ' + esc(u.name) : ''); }).join('<br>') + '</div>' : '';
+  var selCss = 'background:var(--surface2,#1c1f2b);color:inherit;border:1px solid var(--border);border-radius:8px;padding:5px 6px;font:inherit;font-size:.82rem;max-width:100%';
+  var sheetSel = d.st.sheets.length > 1
+    ? '<label style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">גיליון: <select data-x="sheet" style="' + selCss + '">' +
+      d.st.sheets.map(function (s, i) { return '<option value="' + i + '"' + (i === d.st.si ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select></label>'
+    : '';
+  var qtySel = '<label style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">עמודת כמות: <select data-x="qty" style="' + selCss + '">' +
+    (d.qtyCol < 0 ? '<option value="" selected>— בחר —</option>' : '') +
+    d.cols.map(function (o) { return '<option value="' + o.c + '"' + (o.c === d.qtyCol ? ' selected' : '') + '>' + esc(o.label) + '</option>'; }).join('') + '</select></label>';
   var btn = 'flex:1;min-width:140px;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;';
+  var ok = d.order.length > 0;
   var ov = document.createElement('div');
   ov.id = 'xlImportOverlay';
   ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ייבוא הזמנה מאקסל');
   ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML = '<div dir="rtl" style="background:var(--surface,#14161f);color:var(--text,#eee);border:1px solid var(--border);border-radius:14px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:16px">' +
     '<div style="font-weight:800;font-size:1.05rem">📥 ייבוא הזמנה מאקסל</div>' +
-    '<div style="font-size:.78rem;opacity:.75;margin:4px 0 8px">' + esc(d.fname) + ' · גיליון "' + esc(d.sheet) + '"</div>' +
-    '<div style="font-size:.9rem">נמצאו <b>' + d.order.length + '</b> מוצרים · <b>' + units + '</b> יח\'' +
-    (over ? ' · <span style="color:#ff8a65">' + over + ' מעבר למלאי (יסומנו "יתרה תסופק כשיתחדש המלאי")</span>' : '') + '</div>' +
+    '<div style="font-size:.78rem;opacity:.75;margin:4px 0 8px">' + esc(d.fname) + ' · ברקוד מעמודה "' + esc(d.bcLabel) + '"</div>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;margin-bottom:8px">' + sheetSel + qtySel + '</div>' +
+    (ok
+      ? '<div style="font-size:.9rem">נמצאו <b>' + d.order.length + '</b> מוצרים · <b>' + units + '</b> יח\'' +
+        (over ? ' · <span style="color:#ff8a65">' + over + ' מעבר למלאי (יסומנו "יתרה תסופק כשיתחדש המלאי")</span>' : '') + '</div>'
+      : '<div style="font-size:.9rem;color:#ff8a65">אין כמויות בעמודה שנבחרה — בחר עמודת כמות אחרת.</div>') +
     '<div style="overflow:auto;flex:1;margin-top:8px;font-size:.8rem"><table style="width:100%;border-collapse:collapse"><thead><tr style="opacity:.7"><th style="text-align:right;padding:4px 6px">מוצר</th><th>כמות</th><th>מלאי</th></tr></thead><tbody>' + lines + '</tbody></table></div>' +
     un +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
-    (hasCart
+    (!ok ? '' : hasCart
       ? '<button type="button" data-m="replace" style="' + btn + 'border:none;background:#7c4dff;color:#fff">להחליף את ההזמנה הנוכחית</button>' +
         '<button type="button" data-m="merge" style="' + btn + 'border:1px solid #7c4dff;background:none;color:inherit">להוסיף להזמנה הנוכחית</button>'
       : '<button type="button" data-m="replace" style="' + btn + 'border:none;background:#7c4dff;color:#fff">להכניס להזמנה</button>') +
     '<button type="button" data-m="cancel" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:none;color:inherit;cursor:pointer">ביטול</button></div></div>';
+  ov.addEventListener('change', function (e) {
+    var x = e.target.getAttribute && e.target.getAttribute('data-x');
+    if (x === 'sheet') { d.st.si = +e.target.value; d.st.qtyCol = null; _xlImportBuild(d.st); }
+    else if (x === 'qty' && e.target.value !== '') { d.st.qtyCol = +e.target.value; _xlImportBuild(d.st); }
+  });
   ov.addEventListener('click', function (e) {
     var m = e.target.getAttribute && e.target.getAttribute('data-m');
     if (e.target === ov) m = 'cancel';
@@ -11957,7 +12004,7 @@ function _xlImportPreview(d) {
   });
   ov.addEventListener('keydown', function (e) { if (e.key === 'Escape') ov.remove(); });
   document.body.appendChild(ov);
-  try { ov.querySelector('button').focus(); } catch (e) {}
+  try { ov.querySelector(ok ? 'button' : 'select[data-x="qty"]').focus(); } catch (e) {}
 }
 
 function _xlImportApply(d, merge) {
