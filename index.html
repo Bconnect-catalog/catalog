@@ -1466,7 +1466,7 @@ var BC_AUTH_TTL_DAYS = 7;
         <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
       </svg>
     </button>
-    <button class="global-search-xl" id="xlImportBtnHome" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל" aria-label="ייבוא הזמנה מקובץ אקסל">📥</button>
+    <button class="global-search-xl" id="xlImportBtnHome" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל או PDF" aria-label="ייבוא הזמנה מקובץ אקסל או PDF">📥</button>
     <button class="global-search-clear" id="globalSearchClear" onclick="clearGlobalSearch()" aria-label="נקה חיפוש">✕</button>
     </div>
     <div class="global-results" id="globalResults"></div>
@@ -1540,7 +1540,7 @@ var BC_AUTH_TTL_DAYS = 7;
           <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
         </svg>
       </button>
-      <button id="xlImportBtn" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל" aria-label="ייבוא הזמנה מקובץ אקסל" style="display:none;background:var(--surface2);border:1px solid var(--border);color:#21a366;border-radius:10px;height:38px;width:42px;flex-shrink:0;align-items:center;justify-content:center;cursor:pointer;font-size:1.05rem">📥</button>
+      <button id="xlImportBtn" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל או PDF" aria-label="ייבוא הזמנה מקובץ אקסל או PDF" style="display:none;background:var(--surface2);border:1px solid var(--border);color:#21a366;border-radius:10px;height:38px;width:42px;flex-shrink:0;align-items:center;justify-content:center;cursor:pointer;font-size:1.05rem">📥</button>
       <label for="sortSelect" class="sr-only">מיון מוצרים</label>
         <select class="sort-select" id="sortSelect" onchange="renderCards()" aria-label="מיון מוצרים">
         <option value="default">מיון</option>
@@ -11619,7 +11619,7 @@ function saveOrderDraft() {
             items: Object.keys(draft.orders).filter(function(k){return k!=='__shipping__';}).map(function(bc){
               var p = ALL_PRODUCTS.find(function(x){return x.barcode===bc;}) || {};
               var _s1 = _itemStamp(bc, p.dealer_price||0);
-              return {barcode:bc, name:p.name||bc, qty:draft.orders[bc], price:p.dealer_price||0, by:_s1.by, pxby:_s1.pxby, free:!!p.__free, pb:(typeof _pbLineInfo==='function'?_pbLineInfo(p):null), note:(itemNotes[bc]||'')};
+              return {barcode:bc, name:p.name||bc, qty:draft.orders[bc], price:p.dealer_price||0, by:_s1.by, pxby:_s1.pxby, ovp:(window._priceOverride && window._priceOverride[bc] != null ? window._priceOverride[bc] : null), free:!!p.__free, pb:(typeof _pbLineInfo==='function'?_pbLineInfo(p):null), note:(itemNotes[bc]||'')};
             }),
             fields: { deliverySelect: draft.deliverySelect }
           }))
@@ -11663,7 +11663,7 @@ function _saveCurrentDraftSilent() {
     var itemsArr = Object.keys(orders).filter(function(k){return k!=='__shipping__';}).map(function(bc){
       var p = ALL_PRODUCTS.find(function(x){return x.barcode===bc;}) || {};
       var _s2 = _itemStamp(bc, p.dealer_price||0);
-      return {barcode:bc, name:p.name||bc, qty:orders[bc], price:p.dealer_price||0, by:_s2.by, pxby:_s2.pxby};
+      return {barcode:bc, name:p.name||bc, qty:orders[bc], price:p.dealer_price||0, by:_s2.by, pxby:_s2.pxby, ovp:(window._priceOverride && window._priceOverride[bc] != null ? window._priceOverride[bc] : null)};
     });
     
     fetch(SHEETS_URL, {
@@ -11773,6 +11773,8 @@ function _loadDraftIntoCart(draft) {
     if (typeof _ensureFreeFromLine === 'function') _ensureFreeFromLine(it);
     orders[it.barcode] = it.qty || 0;
     orderPrices[it.barcode] = it.price || 0;
+    // מחיר שהסוכן קבע לשורה (ייבוא לפי מחיר המסמך / שחזור מכירה)
+    if (it.ovp != null) { window._priceOverride = window._priceOverride || {}; window._priceOverride[it.barcode] = Number(it.ovp); }
   });
   refreshOrderPrices();
   // שדות
@@ -11825,21 +11827,24 @@ function openXlOrderImport() {
     _showAgentCustomerPopup();
     setTimeout(function () {
       var sub = document.querySelector('#agentCustomerPopup [style*="margin-bottom:16px"]');
-      if (sub) { sub.textContent = '📥 לפני ייבוא ההזמנה מאקסל — בחר לקוח'; sub.style.color = '#ffb74d'; }
+      if (sub) { sub.textContent = '📥 לפני ייבוא ההזמנה מהקובץ — בחר לקוח'; sub.style.color = '#ffb74d'; }
     }, 0);
     return;
   }
   var inp = document.getElementById('xlImportFile');
   if (!inp) {
     inp = document.createElement('input');
-    inp.type = 'file'; inp.id = 'xlImportFile'; inp.accept = '.xlsx,.xls,.xlsm,.csv';
+    inp.type = 'file'; inp.id = 'xlImportFile'; inp.accept = '.xlsx,.xls,.xlsm,.csv,.pdf,application/pdf';
     inp.style.display = 'none';
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; inp.value = '';
       if (!f) return;
       var rd = new FileReader();
       rd.onload = function (e) {
-        try { _xlImportParse(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }), f.name); }
+        try {
+          if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') _pdfImportParse(new Uint8Array(e.target.result), f.name);
+          else _xlImportParse(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }), f.name);
+        }
         catch (err) { alert('לא הצלחתי לקרוא את הקובץ: ' + err.message); }
       };
       rd.readAsArrayBuffer(f);
@@ -11847,6 +11852,145 @@ function openXlOrderImport() {
     document.body.appendChild(inp);
   }
   inp.click();
+}
+
+/* ══ ייבוא הזמנה מ-PDF (04/11/26) ═════════════════════════════════════════
+   PDF עם טקסט (הופק ממערכת) — לא סרוק. pdf.js נטען מהרשת רק כשבוחרים PDF.
+   כל ברקוד שנמצא בקטלוג = שורה. כל מספר בדף משויך לשורה הקרובה אליו בגובה,
+   ומקובץ לעמודה לפי המיקום האופקי; כותרת העמודה (כמות / מחיר / סה"כ) נלקחת
+   מהטקסט שמעל השורה הראשונה. מכאן — אותו מסלול כמו אקסל (סיכום + בחירת עמודה). */
+function _pdfLib(cb) {
+  if (window.pdfjsLib) return cb(window.pdfjsLib);
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload = function () {
+    try { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; } catch (e) {}
+    cb(window.pdfjsLib);
+  };
+  s.onerror = function () { alert('לא הצלחתי לטעון את קורא ה-PDF — בדוק חיבור לאינטרנט ונסה שוב.'); };
+  document.head.appendChild(s);
+}
+
+function _pdfImportParse(buf, fname) {
+  _pdfLib(function (lib) {
+    lib.getDocument({ data: buf }).promise.then(function (doc) {
+      var pages = [];
+      for (var i = 1; i <= doc.numPages; i++) pages.push(i);
+      return Promise.all(pages.map(function (n) {
+        return doc.getPage(n).then(function (pg) {
+          var vp = pg.getViewport({ scale: 1 });
+          return pg.getTextContent().then(function (tc) {
+            return tc.items.map(function (it) {
+              return { s: String(it.str || ''), x: it.transform[4] + (it.width || 0) / 2,
+                       y: (n - 1) * 100000 + (vp.height - it.transform[5]), pg: n };
+            }).filter(function (it) { return it.s.trim(); });
+          });
+        });
+      }));
+    }).then(function (perPage) {
+      _pdfBuild([].concat.apply([], perPage), fname);
+    }).catch(function (err) { alert('לא הצלחתי לקרוא את ה-PDF: ' + (err && err.message || err)); });
+  });
+}
+
+function _pdfBuild(items, fname) {
+  var chars = items.reduce(function (s, it) { return s + it.s.trim().length; }, 0);
+  if (chars < 30) { alert('הקובץ נראה סרוק (תמונה) — אין בו טקסט לקריאה.\nבקש מהלקוח PDF שהופק מהמערכת, או קובץ אקסל.'); return; }
+  var find = _xlFinder();
+  // 1. שורות = ברקודים מהקטלוג (רצף של 8–14 ספרות בתוך פריט טקסט)
+  var hits = [];
+  items.forEach(function (it) {
+    (it.s.match(/\d{8,14}/g) || []).forEach(function (tok) {
+      if (find(tok)) { hits.push({ tok: tok, y: it.y, pg: it.pg, vals: {} }); it.isHit = true; }
+    });
+  });
+  if (!hits.length) { alert('לא נמצא ב-PDF אף ברקוד שקיים בקטלוג.'); return; }
+  hits.sort(function (a, b) { return a.y - b.y; });
+  var gaps = [];
+  for (var g = 1; g < hits.length; g++) if (hits[g].pg === hits[g - 1].pg) gaps.push(hits[g].y - hits[g - 1].y);
+  gaps.sort(function (a, b) { return a - b; });
+  var band = Math.max(18, gaps.length ? gaps[Math.floor(gaps.length / 2)] * 0.75 : 60);
+  // 2. מספרים "נקיים" (פריט שכולו מספר) → עמודה לפי x, שורה לפי הברקוד הקרוב בגובה
+  var cols = [];  // [{x, n}]
+  var colOf = function (x) {
+    for (var c = 0; c < cols.length; c++) if (Math.abs(cols[c].x - x) < 16) { cols[c].x = (cols[c].x * cols[c].n + x) / (cols[c].n + 1); cols[c].n++; return c; }
+    cols.push({ x: x, n: 1 }); return cols.length - 1;
+  };
+  var strays = [];
+  items.forEach(function (it) {
+    if (it.isHit) return;
+    var t = it.s.trim();
+    if (!/^-?[\d,]+(\.\d+)?$/.test(t)) return;
+    var v = parseFloat(t.replace(/,/g, ''));
+    var best = null, bd = 1e9;
+    hits.forEach(function (h) { if (h.pg === it.pg) { var d = Math.abs(h.y - it.y); if (d < bd) { bd = d; best = h; } } });
+    var c = colOf(it.x);
+    if (!best || bd > band) return;
+    var cur = best.vals[c];
+    if (cur && cur.d <= bd) { strays.push({ c: c, v: v, y: it.y, pg: it.pg }); return; }
+    if (cur) strays.push({ c: c, v: cur.v, y: cur.y, pg: it.pg });
+    best.vals[c] = { v: v, d: bd, y: it.y };
+  });
+  // 3. כותרות: טקסט עם אותיות שמעל הברקוד הראשון בעמוד, מעל אותה עמודה
+  var hdr = {};
+  var firstY = {};
+  hits.forEach(function (h) { if (firstY[h.pg] === undefined) firstY[h.pg] = h.y; });
+  items.forEach(function (it) {
+    if (!/[א-תA-Za-z]/.test(it.s) || it.y >= firstY[it.pg] - 2 || it.y < firstY[it.pg] - 260) return;
+    for (var c = 0; c < cols.length; c++) {
+      if (Math.abs(cols[c].x - it.x) < 30) {
+        var lab = it.s.trim();
+        // הכותרת הקרובה ביותר לשורה הראשונה גוברת
+        if (!hdr[c] || it.y > hdr[c].y) hdr[c] = { s: lab, y: it.y };
+      }
+    }
+  });
+  var head = ['ברקוד'];
+  cols.forEach(function (c, i) { head.push(hdr[i] ? hdr[i].s : ('עמודה ' + (i + 1))); });
+  var rows = [head];
+  hits.forEach(function (h) {
+    var r = [h.tok];
+    cols.forEach(function (c, i) { r.push(h.vals[i] ? h.vals[i].v : ''); });
+    rows.push(r);
+  });
+  // 4. כמויות בעמודת "כמות" שלא שויכו לאף ברקוד — שורות שלא נמצאו בקטלוג (לדיווח)
+  var qtyIdx = -1;
+  Object.keys(hdr).forEach(function (c) { if (qtyIdx < 0 && _XL_QTY.test(hdr[c].s) && !_XL_NOT_QTY.test(hdr[c].s)) qtyIdx = +c; });
+  var extra = [];
+  if (qtyIdx >= 0) {
+    var addStray = function (y, pg, v) {
+      var line = items.filter(function (it) { return it.pg === pg && Math.abs(it.y - y) < 6 && /[א-תA-Za-z]{2}/.test(it.s); })
+        .map(function (it) { return it.s.trim(); }).join(' ').slice(0, 60);
+      var code = (items.filter(function (it) { return it.pg === pg && Math.abs(it.y - y) < 6 && /^[\w\-]{3,}$/.test(it.s.trim()) && !/^-?[\d,]+\.\d+$/.test(it.s.trim()); })[0] || {}).s || '?';
+      // סכום השורה = המספר העשרוני הגדול בשורה (סה"כ ≥ מחיר יחידה)
+      var amts = items.filter(function (it) { return it.pg === pg && Math.abs(it.y - y) < 6 && /^[\d,]+\.\d+$/.test(it.s.trim()); })
+        .map(function (it) { return parseFloat(it.s.trim().replace(/,/g, '')); }).filter(function (n) { return n > v; });
+      extra.push({ bc: String(code).trim(), qty: v, name: line, amt: amts.length ? Math.max.apply(null, amts) : null });
+    };
+    strays.forEach(function (s) { if (s.c === qtyIdx && s.v > 0) addStray(s.y, s.pg, s.v); });
+    items.forEach(function (it) {
+      var t = it.s.trim();
+      if (it.isHit || !/^\d+(\.0+)?$/.test(t) || Math.abs(cols[qtyIdx].x - it.x) >= 16) return;
+      var near = hits.some(function (h) { return h.pg === it.pg && Math.abs(h.y - it.y) <= band; });
+      if (!near && it.y > firstY[it.pg] && parseFloat(t) > 0 && parseFloat(t) < 10000) addStray(it.y, it.pg, parseFloat(t));
+    });
+  }
+  // 5. שורות הסיכום של המסמך (לבדיקת התאמה)
+  var lineTxt = {};
+  items.forEach(function (it) { var k = it.pg + ':' + Math.round(it.y / 4); (lineTxt[k] = lineTxt[k] || []).push(it.s); });
+  var sum = { beforeVat: null, units: null }, taxable = null, exempt = null;
+  Object.keys(lineTxt).forEach(function (k) {
+    var t = lineTxt[k].join(' ').replace(/[`'״׳]/g, '"');
+    var nums = (t.match(/\d[\d,]*\.\d{2}/g) || []).map(function (x) { return parseFloat(x.replace(/,/g, '')); });
+    if (!nums.length) return;
+    var v = nums[nums.length - 1];
+    if (/לפני מס|לפני מע"?מ/.test(t)) sum.beforeVat = v;
+    else if (/חייב מע"?מ/.test(t)) taxable = v;
+    else if (/פטור מע"?מ/.test(t)) exempt = v;
+    else if (/סה"כ כמות|כמות כוללת|סה"כ יחידות/.test(t)) sum.units = v;
+  });
+  if (sum.beforeVat === null && (taxable !== null || exempt !== null)) sum.beforeVat = (taxable || 0) + (exempt || 0);
+  _xlImportStart([{ name: 'PDF', rows: rows, bcCol: 0, hits: hits.length }], fname, find, extra, sum);
 }
 
 function _xlNorm(v) {
@@ -11859,18 +12003,25 @@ function _xlNorm(v) {
 var _XL_NOT_QTY = /מחיר|עלות|price|cost|סה"כ|סכום|total|מספר|תאריך|מבצע|יתרה|מלאי|stock|ברקוד|barcode|מק"ט|קוד/i;
 var _XL_QTY = /כמות|הזמנה|להזמנה|qty|quantity|order|יח'|יחידות|pcs/i;
 
-function _xlImportParse(wb, fname) {
-  var byBc = {}, byCode = {};
+// מאתר מוצר לפי ערך מהקובץ: ברקוד, ברקוד בלי אפסים מובילים, מק"ט, או 12 ספרות =
+// ברקוד של 13 בלי ספרת הביקורת (מערכות כמו של משאבות הים האדום / Philips קוטעות אותה).
+function _xlFinder() {
+  var byBc = {}, byCode = {}, by12 = {};
   ALL_PRODUCTS.forEach(function (p) {
     if (!p || !p.barcode || p.barcode === '__free') return;
     if (!byBc[p.barcode]) byBc[p.barcode] = p;
     var bn = p.barcode.replace(/^0+/, ''); if (bn && !byBc[bn]) byBc[bn] = p;
     if (p.code) { var c = String(p.code).trim().toLowerCase(); if (c && !byCode[c]) byCode[c] = p; }
+    if (/^\d{13}$/.test(p.barcode)) { var k = p.barcode.slice(0, 12); by12[k] = (by12[k] === undefined || by12[k] === p) ? p : null; }
   });
-  var find = function (v) {
+  return function (v) {
     var s = _xlNorm(v); if (!s) return null;
-    return byBc[s] || byBc[s.replace(/^0+/, '')] || byCode[s.toLowerCase()] || null;
+    return byBc[s] || byBc[s.replace(/^0+/, '')] || byCode[s.toLowerCase()] || (/^\d{12}$/.test(s) && by12[s]) || null;
   };
+}
+
+function _xlImportParse(wb, fname) {
+  var find = _xlFinder();
   // לכל גיליון: עמודת הברקוד = העמודה עם הכי הרבה התאמות לקטלוג
   var sheets = [];
   wb.SheetNames.forEach(function (sn) {
@@ -11882,8 +12033,12 @@ function _xlImportParse(wb, fname) {
     if (bc >= 0) sheets.push({ name: sn, rows: rows, bcCol: bc, hits: hits[bc] });
   });
   if (!sheets.length) { alert('לא נמצא בקובץ אף ברקוד או מק"ט שקיים בקטלוג.'); return; }
+  _xlImportStart(sheets, fname, find, []);
+}
+
+function _xlImportStart(sheets, fname, find, extra, summary) {
   // גיליון ברירת מחדל: זה שיש בו עמודת הזמנה עם כמויות; אחרת זה עם הכי הרבה התאמות
-  var st = { fname: fname, find: find, sheets: sheets, si: 0, qtyCol: null };
+  var st = { fname: fname, find: find, sheets: sheets, si: 0, qtyCol: null, extra: extra || [], summary: summary || null };
   var bestScore = -1;
   sheets.forEach(function (sh, i) {
     var a = _xlAutoQty(sh, find);
@@ -11926,11 +12081,57 @@ function _xlAutoQty(sh, find) {
   return { firstData: firstData, hdr: hdr, ncol: ncol, qtyCol: qtyCol, byHeader: byHeader };
 }
 
+// עמודות המחיר במסמך, לפי הכותרת: מחיר יחידה (לא צרכן/מבצע/כולל מע"מ) ו-סה"כ שורה
+function _xlDocCols(hdr, skip) {
+  var n = function (t) { return String(t || '').replace(/[`'״׳]/g, '"'); };
+  var unit = -1, line = -1;
+  Object.keys(hdr).forEach(function (k) {
+    var c = +k, t = n(hdr[k]);
+    if (skip.indexOf(c) !== -1) return;
+    if (line < 0 && /סה"כ|סה''כ|סך|total|סכום/i.test(t) && !/כמות|מע"מ|מע''מ/.test(t)) line = c;
+    else if (unit < 0 && /מחיר|עלות|price|cost/i.test(t) && !/צרכן|מבצע|כולל|סה"כ|total/i.test(t)) unit = c;
+  });
+  return { unit: unit, line: line };
+}
+// שורת סה"כ באקסל (שורה בלי מוצר שכתוב בה סה"כ / סיכום / total): "לפני מע"מ" גובר על סה"כ רגיל;
+// שורה של מע"מ או "כולל מע"מ" — לא נחשבת. הסכום: מעמודת סה"כ השורה, ואם אין — המספר האחרון בשורה.
+// הכמות: מעמודת הכמות, או משורה "סה"כ כמות".
+function _xlSheetSummary(rows, firstData, bcCol, qtyCol, dc, find) {
+  var out = { beforeVat: null, units: null }, plain = null, plainUnits = null;
+  for (var i = Math.max(0, firstData); i < rows.length; i++) {
+    var r = rows[i] || [];
+    if (find(r[bcCol])) continue;
+    var txt = r.filter(function (v) { return typeof v === 'string'; }).join(' ').replace(/[`'״׳]/g, '"');
+    if (!/סה"כ|סה""כ|סך הכל|סיכום|total/i.test(txt)) continue;
+    var nums = [];
+    r.forEach(function (v, c) { var n = _xlNum(v); if (n !== null && typeof v !== 'boolean' && String(v).trim() !== '') nums.push({ c: c, n: n }); });
+    if (!nums.length) continue;
+    var at = function (c) { for (var k = 0; k < nums.length; k++) if (nums[k].c === c) return nums[k].n; return null; };
+    if (/כמות|יחידות|qty/i.test(txt) && !/מחיר|סכום|₪/.test(txt)) { out.units = nums[nums.length - 1].n; continue; }
+    if (/כולל מע"?מ|incl/i.test(txt) || (/מע"?מ|vat/i.test(txt) && !/לפני|ללא|בלי|before|net|excl/i.test(txt))) continue;
+    var amt = dc.line >= 0 && at(dc.line) !== null ? at(dc.line) : nums[nums.length - 1].n;
+    if (/לפני|ללא|בלי|before|net|excl/i.test(txt)) out.beforeVat = amt;
+    else if (plain === null) { plain = amt; plainUnits = qtyCol >= 0 ? at(qtyCol) : null; }
+  }
+  if (out.beforeVat === null) out.beforeVat = plain;
+  if (out.units === null && plainUnits !== null) out.units = plainUnits;
+  return (out.beforeVat !== null || out.units !== null) ? out : null;
+}
+function _xlNum(v) { var n = typeof v === 'number' ? v : parseFloat(String(v == null ? '' : v).replace(/[,₪\s]/g, '')); return isFinite(n) ? n : null; }
+
 function _xlImportBuild(st) {
   var sh = st.sheets[st.si], find = st.find, rows = sh.rows, bcCol = sh.bcCol;
   var a = _xlAutoQty(sh, find);
   var qtyCol = (st.qtyCol !== null && st.qtyCol !== bcCol) ? st.qtyCol : a.qtyCol;
-  var items = {}, order = [], unmatched = [];
+  var items = {}, order = [], unmatched = [], docAmt = {};
+  var dc = _xlDocCols(a.hdr, [bcCol, qtyCol]);
+  // סכום השורה במסמך: עמודת סה"כ, ואם אין — מחיר יחידה × כמות
+  var lineAmt = function (r, q) {
+    var L = dc.line >= 0 ? _xlNum(r[dc.line]) : null;
+    if (L !== null && L > 0) return L;
+    var U = dc.unit >= 0 ? _xlNum(r[dc.unit]) : null;
+    return (U !== null && U > 0) ? U * q : null;
+  };
   if (qtyCol >= 0) {
     for (var i = a.firstData; i < rows.length; i++) {
       var r = rows[i] || [];
@@ -11941,7 +12142,7 @@ function _xlImportBuild(st) {
         // שורה עם ערך דמוי-ברקוד וכמות שלא נמצאה בקטלוג — לדיווח
         if (raw && q > 0 && /^[\w\-]{5,}$/.test(raw)) {
           var nm = r.filter(function (v, c) { return c !== bcCol && c !== qtyCol && typeof v === 'string' && /[א-תA-Za-z]{3}/.test(v); })[0] || '';
-          unmatched.push({ bc: raw, qty: q, name: String(nm).slice(0, 60) });
+          unmatched.push({ bc: raw, qty: q, name: String(nm).slice(0, 60), amt: lineAmt(r, q) });
         }
         continue;
       }
@@ -11949,31 +12150,89 @@ function _xlImportBuild(st) {
       q = Math.round(q);
       if (!items[p.barcode]) { items[p.barcode] = 0; order.push(p.barcode); }
       items[p.barcode] += q;
+      var la = lineAmt(r, q);
+      if (la !== null) { var da = docAmt[p.barcode] || (docAmt[p.barcode] = { amt: 0, qty: 0 }); da.amt += la; da.qty += q; }
     }
   }
+  unmatched = unmatched.concat(st.extra || []);
   var cols = [];
   for (var c = 0; c < a.ncol; c++) if (c !== bcCol) cols.push({ c: c, label: a.hdr[c] || ('עמודה ' + XLSX.utils.encode_col(c)) });
   _xlImportPreview({ st: st, fname: st.fname, sheet: sh.name, items: items, order: order, unmatched: unmatched,
-                     qtyCol: qtyCol, cols: cols, bcLabel: a.hdr[bcCol] || ('עמודה ' + XLSX.utils.encode_col(bcCol)) });
+                     docAmt: docAmt, docSum: st.summary || _xlSheetSummary(rows, a.firstData, bcCol, qtyCol, dc, find), qtyCol: qtyCol, cols: cols, bcLabel: a.hdr[bcCol] || ('עמודה ' + XLSX.utils.encode_col(bcCol)) });
 }
 
 function _xlImportPreview(d) {
   var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var old = document.getElementById('xlImportOverlay'); if (old) old.remove();
-  var units = 0, over = 0;
+  var units = 0, over = 0, catTotal = 0, docTotal = 0, docRows = 0, pxDiff = 0, roundGap = 0;
+  var useDoc = d.st.useDoc || (d.st.useDoc = {});
+  d.docUnit = {}; d.diffBcs = [];
+  var f2 = function (n) { return Number(n).toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
   var lines = d.order.map(function (bc) {
     var p = ALL_PRODUCTS.find(function (x) { return x.barcode === bc; });
     var q = d.items[bc]; units += q;
+    var cp = roundHalf(parseFloat(getEffectiveDealerPrice(p)) || 0);
+    var da = d.docAmt && d.docAmt[bc], pxNote = '', usedPx = cp;
+    if (da) {
+      docTotal += da.amt; docRows++;
+      var du = Math.round(da.amt / da.qty * 100) / 100;
+      if (Math.abs(du - cp) > 0.5) {
+        pxDiff++; d.docUnit[bc] = du; d.diffBcs.push(bc);
+        if (useDoc[bc]) usedPx = roundHalf(du);   // הקטלוג עובד בשקלים שלמים
+        pxNote = '<label style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px;font-size:.72rem;font-weight:700;color:' + (useDoc[bc] ? '#4caf50' : '#ff8a65') + ';cursor:pointer">' +
+          '<input type="checkbox" data-px="' + esc(bc) + '"' + (useDoc[bc] ? ' checked' : '') + ' style="width:16px;height:16px;margin:0">' +
+          'במסמך ₪' + f2(du) + ' · בקטלוג ₪' + f2(cp) + ' — ' +
+          (useDoc[bc] ? 'יוזמן לפי המסמך' + (roundHalf(du) !== du ? ' (₪' + roundHalf(du) + ', שקל שלם)' : '') : 'להזמין לפי המסמך') + '</label>';
+      }
+      // מחיר שתואם עד חצי שקל — ההפרש הוא עיגול, לא טעות
+      if (Math.abs(du - usedPx) <= 0.5) roundGap += (du - usedPx) * q;
+    }
+    catTotal += usedPx * q;
     var lim = p.stock !== 'מעל 200' && p.stock !== 'מעל 100' && !isPresale(p);
     var st = getStockNum(p.stock);
     var warn = lim && q > st;
     if (warn) over++;
     return '<tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px">' + esc(p.name) +
-      '<div style="opacity:.6;font-size:.7rem">' + esc(bc) + '</div></td><td style="padding:4px 6px;text-align:center;font-weight:700">' + q +
+      '<div style="opacity:.6;font-size:.7rem">' + esc(bc) + '</div>' + pxNote + '</td><td style="padding:4px 6px;text-align:center;font-weight:700">' + q +
       '</td><td style="padding:4px 6px;text-align:center;' + (warn ? 'color:#ff8a65;font-weight:700' : 'opacity:.7') + '">' +
       (lim ? st : '✓') + '</td></tr>';
   }).join('');
   var hasCart = Object.keys(orders).some(function (k) { return k !== '__shipping__' && orders[k] > 0; });
+  // התאמה למסמך — כמות וסה"כ לפני מע"מ (מהשורת הסיכום של המסמך, ואם אין — מחושב מהשורות)
+  var unQty = 0, unAmt = 0, unAmtKnown = true;
+  d.unmatched.forEach(function (u) { unQty += u.qty || 0; if (u.amt != null) unAmt += u.amt; else unAmtKnown = false; });
+  var ds = d.docSum || {};
+  var docUnits = ds.units != null ? ds.units : null;
+  var docBefore = ds.beforeVat != null ? ds.beforeVat : (docRows === d.order.length && docRows ? docTotal + (unAmtKnown ? unAmt : 0) : null);
+  var mk = function (label, docV, catV, fmt, tol, note) {
+    if (docV == null) return '';
+    var ok2 = Math.abs(docV - catV) <= tol;
+    return '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:3px 0">' +
+      '<span>' + label + '</span><span>במסמך <b>' + fmt(docV) + '</b> · בקטלוג <b>' + fmt(catV) + '</b> ' +
+      (ok2 ? '<span style="color:#4caf50;font-weight:800">✓ תואם</span>'
+           : '<span style="color:#ff8a65;font-weight:800">⚠️ פער ' + fmt(catV - docV) + '</span>') + (note || '') + '</span></div>';
+  };
+  var unNote = d.unmatched.length ? ' <span style="opacity:.7;font-size:.72rem">(כולל ' + d.unmatched.length + ' שורות שלא נמצאו' +
+    (unAmtKnown && unAmt ? ', ₪' + f2(unAmt) : '') + ')</span>' : '';
+  var recon = (docUnits != null || docBefore != null) && d.order.length
+    ? '<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:rgba(124,77,255,.08);border:1px solid rgba(124,77,255,.35);font-size:.8rem">' +
+      '<div style="font-weight:800;margin-bottom:2px">🧮 התאמה למסמך</div>' +
+      mk('כמות', docUnits, units + unQty, function (n) { return String(Math.round(n * 100) / 100); }, 0.001, '') +
+      (function () {
+        if (docBefore == null) return '';
+        var catV = catTotal + (unAmtKnown ? unAmt : 0), diff = catV - docBefore;
+        if (Math.abs(diff) > 1 && Math.abs(diff + roundGap) <= 1)
+          return '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:3px 0"><span>סה"כ לפני מע"מ</span><span>במסמך <b>₪' + f2(docBefore) +
+            '</b> · בקטלוג <b>₪' + f2(catV) + '</b> <span style="color:#4caf50;font-weight:800">✓ תואם</span> <span style="opacity:.75;font-size:.72rem">(הפרש ₪' + f2(Math.abs(diff)) +
+            ' מעיגול לשקל שלם)</span>' + unNote + '</span></div>';
+        return mk('סה"כ לפני מע"מ', docBefore, catV, function (n) { return '₪' + f2(n); }, 1, unNote);
+      })() +
+      (pxDiff ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#ff8a65;font-size:.74rem;margin-top:4px">' +
+        '<span>' + pxDiff + ' שורות במחיר שונה מהקטלוג — סמן ✓ בשורה כדי להזמין לפי מחיר המסמך</span>' +
+        '<button type="button" data-x="pxall" style="padding:4px 10px;border-radius:8px;border:1px solid #ff8a65;background:none;color:#ff8a65;font:inherit;font-weight:700;cursor:pointer">' +
+        (d.diffBcs.every(function (b) { return useDoc[b]; }) ? 'לבטל — הכול לפי הקטלוג' : 'הכול לפי מחיר המסמך') + '</button></div>' : '') +
+      '</div>'
+    : '';
   var un = d.unmatched.length ? '<div style="margin-top:10px;color:#ff8a65;font-weight:700">⚠️ ' + d.unmatched.length + ' שורות לא נמצאו בקטלוג (לא ייכנסו):</div>' +
     '<div style="font-size:.75rem;max-height:110px;overflow:auto;background:rgba(255,138,101,.08);border-radius:8px;padding:6px">' +
     d.unmatched.map(function (u) { return esc(u.bc) + ' × ' + u.qty + (u.name ? ' — ' + esc(u.name) : ''); }).join('<br>') + '</div>' : '';
@@ -11992,12 +12251,12 @@ function _xlImportPreview(d) {
   ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ייבוא הזמנה מאקסל');
   ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML = '<div dir="rtl" style="background:var(--surface,#14161f);color:var(--text,#eee);border:1px solid var(--border);border-radius:14px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:16px">' +
-    '<div style="font-weight:800;font-size:1.05rem">📥 ייבוא הזמנה מאקסל</div>' +
+    '<div style="font-weight:800;font-size:1.05rem">📥 ייבוא הזמנה מקובץ</div>' +
     '<div style="font-size:.78rem;opacity:.75;margin:4px 0 8px">' + esc(d.fname) + ' · ברקוד מעמודה "' + esc(d.bcLabel) + '"</div>' +
     '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:.85rem;margin-bottom:8px">' + sheetSel + qtySel + '</div>' +
     (ok
       ? '<div style="font-size:.9rem">נמצאו <b>' + d.order.length + '</b> מוצרים · <b>' + units + '</b> יח\'' +
-        (over ? ' · <span style="color:#ff8a65">' + over + ' מעבר למלאי (יסומנו "יתרה תסופק כשיתחדש המלאי")</span>' : '') + '</div>'
+        (over ? ' · <span style="color:#ff8a65">' + over + ' מעבר למלאי (יסומנו "יתרה תסופק כשיתחדש המלאי")</span>' : '') + '</div>' + recon
       : '<div style="font-size:.9rem;color:#ff8a65">אין כמויות בעמודה שנבחרה — בחר עמודת כמות אחרת.</div>') +
     '<div style="overflow:auto;flex:1;margin-top:8px;font-size:.8rem"><table style="width:100%;border-collapse:collapse"><thead><tr style="opacity:.7"><th style="text-align:right;padding:4px 6px">מוצר</th><th>כמות</th><th>מלאי</th></tr></thead><tbody>' + lines + '</tbody></table></div>' +
     un +
@@ -12009,10 +12268,17 @@ function _xlImportPreview(d) {
     '<button type="button" data-m="cancel" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:none;color:inherit;cursor:pointer">ביטול</button></div></div>';
   ov.addEventListener('change', function (e) {
     var x = e.target.getAttribute && e.target.getAttribute('data-x');
-    if (x === 'sheet') { d.st.si = +e.target.value; d.st.qtyCol = null; _xlImportBuild(d.st); }
-    else if (x === 'qty' && e.target.value !== '') { d.st.qtyCol = +e.target.value; _xlImportBuild(d.st); }
+    var px = e.target.getAttribute && e.target.getAttribute('data-px');
+    if (px) { if (e.target.checked) d.st.useDoc[px] = true; else delete d.st.useDoc[px]; _xlImportBuild(d.st); return; }
+    if (x === 'sheet') { d.st.si = +e.target.value; d.st.qtyCol = null; d.st.useDoc = {}; _xlImportBuild(d.st); }
+    else if (x === 'qty' && e.target.value !== '') { d.st.qtyCol = +e.target.value; d.st.useDoc = {}; _xlImportBuild(d.st); }
   });
   ov.addEventListener('click', function (e) {
+    if (e.target.getAttribute && e.target.getAttribute('data-x') === 'pxall') {
+      var all = d.diffBcs.every(function (b) { return d.st.useDoc[b]; });
+      d.diffBcs.forEach(function (b) { if (all) delete d.st.useDoc[b]; else d.st.useDoc[b] = true; });
+      _xlImportBuild(d.st); return;
+    }
     var m = e.target.getAttribute && e.target.getAttribute('data-m');
     if (e.target === ov) m = 'cancel';
     if (!m) return;
@@ -12033,10 +12299,15 @@ function _xlImportApply(d, merge) {
     var ex = itemNotes[bc] || '';
     if (ex.indexOf(t) === -1) itemNotes[bc] = ex ? (ex + ' | ' + t) : t;
   };
+  window._priceOverride = window._priceOverride || {};
+  var useDoc = (d.st && d.st.useDoc) || {};
   d.order.forEach(function (bc) {
     var p = ALL_PRODUCTS.find(function (x) { return x.barcode === bc; });
     var q = (merge ? (orders[bc] || 0) : 0) + d.items[bc];
     orders[bc] = q;
+    // מחיר לפי המסמך — רק כשהסוכן סימן; אחרת מחיר הקטלוג (ומבטלים דריסה ישנה של השורה)
+    if (useDoc[bc] && d.docUnit && d.docUnit[bc] != null) window._priceOverride[bc] = d.docUnit[bc];
+    else delete window._priceOverride[bc];
     orderPrices[bc] = getEffectiveDealerPrice(p);
     if (isPresale(p)) {
       if (!itemNotes[bc] || itemNotes[bc] === PRESALE_NOTE || itemNotes[bc] === PRESALE_NOTE_FULL) itemNotes[bc] = _presaleNote(p);
