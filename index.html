@@ -1537,6 +1537,7 @@ var BC_AUTH_TTL_DAYS = 7;
           <line x1="13" y1="8" x2="13" y2="16"/><line x1="16" y1="8" x2="16" y2="16"/>
         </svg>
       </button>
+      <button id="xlImportBtn" type="button" onclick="openXlOrderImport()" title="ייבוא הזמנה מקובץ אקסל" aria-label="ייבוא הזמנה מקובץ אקסל" style="display:none;background:var(--surface2);border:1px solid var(--border);color:#21a366;border-radius:10px;height:38px;width:42px;flex-shrink:0;align-items:center;justify-content:center;cursor:pointer;font-size:1.05rem">📥</button>
       <label for="sortSelect" class="sr-only">מיון מוצרים</label>
         <select class="sort-select" id="sortSelect" onchange="renderCards()" aria-label="מיון מוצרים">
         <option value="default">מיון</option>
@@ -1841,6 +1842,8 @@ function _applyAgentSelect(auth) {
   if (auth === undefined) {
     try { auth = JSON.parse(sessionStorage.getItem('bc_auth') || 'null'); } catch(e) { auth = null; }
   }
+  // כפתור ייבוא הזמנה מאקסל — לסוכן/מנהל בלבד
+  try { var _xb = document.getElementById('xlImportBtn'); if (_xb) _xb.style.display = (auth && (auth.role === 'agent' || auth.role === 'admin')) ? 'flex' : 'none'; } catch(e) {}
 
   // ברירת מחדל: פתוח לבחירה. הנעילה נקבעת רק אם באמת נבחר סוכן.
   sel.style.pointerEvents = '';
@@ -11793,6 +11796,191 @@ function restoreDraft() {
   } catch(e) { alert('שגיאה בשחזור: ' + e.message); }
 }
 
+
+/* ══ ייבוא הזמנה מאקסל (04/11/26) ═════════════════════════════════════════
+   סוכן/מנהל בלבד. קורא קובץ xlsx/xls/csv, מזהה לבד את עמודת הברקוד (העמודה עם
+   הכי הרבה ברקודים שקיימים בקטלוג; גם מק"ט נתפס) ואת עמודת הכמות (כותרת "כמות",
+   ואם אין — העמודה המספרית השלמה). ברקוד שחוזר בקובץ — הכמויות מצטברות.
+   לפני ההחלה מוצג סיכום: מה נמצא, מה לא, ומה מעבר למלאי. */
+function openXlOrderImport() {
+  if (!_isAgentOrAdmin() && !adminMode) return;
+  if (typeof XLSX === 'undefined') { alert('ספריית האקסל לא נטענה — רענן את הדף ונסה שוב.'); return; }
+  var inp = document.getElementById('xlImportFile');
+  if (!inp) {
+    inp = document.createElement('input');
+    inp.type = 'file'; inp.id = 'xlImportFile'; inp.accept = '.xlsx,.xls,.xlsm,.csv';
+    inp.style.display = 'none';
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; inp.value = '';
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function (e) {
+        try { _xlImportParse(XLSX.read(new Uint8Array(e.target.result), { type: 'array' }), f.name); }
+        catch (err) { alert('לא הצלחתי לקרוא את הקובץ: ' + err.message); }
+      };
+      rd.readAsArrayBuffer(f);
+    };
+    document.body.appendChild(inp);
+  }
+  inp.click();
+}
+
+function _xlNorm(v) {
+  var s = String(v == null ? '' : v).trim();
+  if (/^\d+(\.0+)?$/.test(s)) s = s.replace(/\.0+$/, '');
+  return s.replace(/^'+/, '');
+}
+
+function _xlImportParse(wb, fname) {
+  var byBc = {}, byCode = {};
+  ALL_PRODUCTS.forEach(function (p) {
+    if (!p || !p.barcode || p.barcode === '__free') return;
+    if (!byBc[p.barcode]) byBc[p.barcode] = p;
+    var bn = p.barcode.replace(/^0+/, ''); if (bn && !byBc[bn]) byBc[bn] = p;
+    if (p.code) { var c = String(p.code).trim().toLowerCase(); if (c && !byCode[c]) byCode[c] = p; }
+  });
+  var find = function (v) {
+    var s = _xlNorm(v); if (!s) return null;
+    return byBc[s] || byBc[s.replace(/^0+/, '')] || byCode[s.toLowerCase()] || null;
+  };
+  // בוחרים את הגיליון והעמודה עם הכי הרבה התאמות
+  var best = null;
+  wb.SheetNames.forEach(function (sn) {
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, raw: true, defval: '' });
+    var hits = {};
+    rows.forEach(function (r) { r.forEach(function (v, c) { if (find(v)) hits[c] = (hits[c] || 0) + 1; }); });
+    Object.keys(hits).forEach(function (c) {
+      if (!best || hits[c] > best.hits) best = { sheet: sn, rows: rows, col: +c, hits: hits[c] };
+    });
+  });
+  if (!best) { alert('לא נמצא בקובץ אף ברקוד או מק"ט שקיים בקטלוג.'); return; }
+  var rows = best.rows, bcCol = best.col;
+  var firstData = -1;
+  for (var k = 0; k < rows.length; k++) { if (find((rows[k] || [])[bcCol])) { firstData = k; break; } }
+  var dataRows = rows.filter(function (r) { return find(r[bcCol]); });
+  // עמודת כמות: קודם לפי כותרת (בשורות שמעל הנתונים), אחרת העמודה המספרית השלמה
+  var qtyCol = -1;
+  for (var h = Math.max(0, firstData - 5); h < firstData && qtyCol < 0; h++) {
+    (rows[h] || []).forEach(function (v, c) {
+      if (qtyCol < 0 && c !== bcCol && /כמות|כמ'|qty|quantity|יח'|יחידות|pcs/i.test(String(v))) qtyCol = c;
+    });
+  }
+  if (qtyCol < 0) {
+    var hdr = {};
+    for (var h2 = Math.max(0, firstData - 5); h2 < firstData; h2++)
+      (rows[h2] || []).forEach(function (v, c) { hdr[c] = (hdr[c] || '') + ' ' + v; });
+    var score = {};
+    dataRows.forEach(function (r) {
+      r.forEach(function (v, c) {
+        if (c === bcCol || /מחיר|price|סה"כ|סכום|total|ברקוד|barcode|מק"ט/i.test(hdr[c] || '')) return;
+        var n = typeof v === 'number' ? v : (/^\s*\d+\s*$/.test(String(v)) ? +v : NaN);
+        if (n > 0 && n <= 10000 && Math.floor(n) === n) score[c] = (score[c] || 0) + 1;
+      });
+    });
+    Object.keys(score).forEach(function (c) { if (qtyCol < 0 || score[c] > score[qtyCol]) qtyCol = +c; });
+  }
+  if (qtyCol < 0) { alert('מצאתי ברקודים, אבל לא עמודת כמות. הוסף לקובץ עמודה בשם "כמות" ונסה שוב.'); return; }
+
+  var items = {}, order = [], unmatched = [], zero = 0;
+  for (var i = firstData; i < rows.length; i++) {
+    var r = rows[i] || [];
+    var raw = _xlNorm(r[bcCol]);
+    var q = parseFloat(String(r[qtyCol]).replace(/,/g, ''));
+    var p = find(r[bcCol]);
+    if (!p) {
+      // שורה עם ערך דמוי-ברקוד וכמות שלא נמצאה בקטלוג — לדיווח
+      if (raw && q > 0 && /^[\w\-]{5,}$/.test(raw)) {
+        var nm = r.filter(function (v, c) { return c !== bcCol && c !== qtyCol && typeof v === 'string' && /[א-תA-Za-z]{3}/.test(v); })[0] || '';
+        unmatched.push({ bc: raw, qty: q, name: String(nm).slice(0, 60) });
+      }
+      continue;
+    }
+    if (!(q > 0)) { zero++; continue; }
+    q = Math.round(q);
+    if (!items[p.barcode]) { items[p.barcode] = 0; order.push(p.barcode); }
+    items[p.barcode] += q;
+  }
+  if (!order.length) { alert('הברקודים נמצאו, אבל אין בעמודת הכמות אף כמות חיובית.'); return; }
+  _xlImportPreview({ fname: fname, sheet: best.sheet, items: items, order: order, unmatched: unmatched, zero: zero });
+}
+
+function _xlImportPreview(d) {
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var units = 0, over = 0;
+  var lines = d.order.map(function (bc) {
+    var p = ALL_PRODUCTS.find(function (x) { return x.barcode === bc; });
+    var q = d.items[bc]; units += q;
+    var lim = p.stock !== 'מעל 200' && p.stock !== 'מעל 100' && !isPresale(p);
+    var st = getStockNum(p.stock);
+    var warn = lim && q > st;
+    if (warn) over++;
+    return '<tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px">' + esc(p.name) +
+      '<div style="opacity:.6;font-size:.7rem">' + esc(bc) + '</div></td><td style="padding:4px 6px;text-align:center;font-weight:700">' + q +
+      '</td><td style="padding:4px 6px;text-align:center;' + (warn ? 'color:#ff8a65;font-weight:700' : 'opacity:.7') + '">' +
+      (lim ? st : '✓') + '</td></tr>';
+  }).join('');
+  var hasCart = Object.keys(orders).some(function (k) { return k !== '__shipping__' && orders[k] > 0; });
+  var un = d.unmatched.length ? '<div style="margin-top:10px;color:#ff8a65;font-weight:700">⚠️ ' + d.unmatched.length + ' שורות לא נמצאו בקטלוג (לא ייכנסו):</div>' +
+    '<div style="font-size:.75rem;max-height:110px;overflow:auto;background:rgba(255,138,101,.08);border-radius:8px;padding:6px">' +
+    d.unmatched.map(function (u) { return esc(u.bc) + ' × ' + u.qty + (u.name ? ' — ' + esc(u.name) : ''); }).join('<br>') + '</div>' : '';
+  var btn = 'flex:1;min-width:140px;padding:10px;border-radius:10px;font-weight:700;cursor:pointer;';
+  var ov = document.createElement('div');
+  ov.id = 'xlImportOverlay';
+  ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', 'ייבוא הזמנה מאקסל');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML = '<div dir="rtl" style="background:var(--surface,#14161f);color:var(--text,#eee);border:1px solid var(--border);border-radius:14px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:16px">' +
+    '<div style="font-weight:800;font-size:1.05rem">📥 ייבוא הזמנה מאקסל</div>' +
+    '<div style="font-size:.78rem;opacity:.75;margin:4px 0 8px">' + esc(d.fname) + ' · גיליון "' + esc(d.sheet) + '"</div>' +
+    '<div style="font-size:.9rem">נמצאו <b>' + d.order.length + '</b> מוצרים · <b>' + units + '</b> יח\'' +
+    (over ? ' · <span style="color:#ff8a65">' + over + ' מעבר למלאי (יסומנו "יתרה תסופק כשיתחדש המלאי")</span>' : '') + '</div>' +
+    '<div style="overflow:auto;flex:1;margin-top:8px;font-size:.8rem"><table style="width:100%;border-collapse:collapse"><thead><tr style="opacity:.7"><th style="text-align:right;padding:4px 6px">מוצר</th><th>כמות</th><th>מלאי</th></tr></thead><tbody>' + lines + '</tbody></table></div>' +
+    un +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+    (hasCart
+      ? '<button type="button" data-m="replace" style="' + btn + 'border:none;background:#7c4dff;color:#fff">להחליף את ההזמנה הנוכחית</button>' +
+        '<button type="button" data-m="merge" style="' + btn + 'border:1px solid #7c4dff;background:none;color:inherit">להוסיף להזמנה הנוכחית</button>'
+      : '<button type="button" data-m="replace" style="' + btn + 'border:none;background:#7c4dff;color:#fff">להכניס להזמנה</button>') +
+    '<button type="button" data-m="cancel" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:none;color:inherit;cursor:pointer">ביטול</button></div></div>';
+  ov.addEventListener('click', function (e) {
+    var m = e.target.getAttribute && e.target.getAttribute('data-m');
+    if (e.target === ov) m = 'cancel';
+    if (!m) return;
+    ov.remove();
+    if (m !== 'cancel') _xlImportApply(d, m === 'merge');
+  });
+  ov.addEventListener('keydown', function (e) { if (e.key === 'Escape') ov.remove(); });
+  document.body.appendChild(ov);
+  try { ov.querySelector('button').focus(); } catch (e) {}
+}
+
+function _xlImportApply(d, merge) {
+  if (!merge) {
+    Object.keys(orders).forEach(function (k) { if (k !== '__shipping__') { delete orders[k]; delete orderPrices[k]; } });
+  }
+  var _ovNote = 'יתרה תסופק כשיתחדש המלאי', _oosNote = 'לספק כשיתחדש המלאי';
+  var addNote = function (bc, t) {
+    var ex = itemNotes[bc] || '';
+    if (ex.indexOf(t) === -1) itemNotes[bc] = ex ? (ex + ' | ' + t) : t;
+  };
+  d.order.forEach(function (bc) {
+    var p = ALL_PRODUCTS.find(function (x) { return x.barcode === bc; });
+    var q = (merge ? (orders[bc] || 0) : 0) + d.items[bc];
+    orders[bc] = q;
+    orderPrices[bc] = getEffectiveDealerPrice(p);
+    if (isPresale(p)) {
+      if (!itemNotes[bc] || itemNotes[bc] === PRESALE_NOTE || itemNotes[bc] === PRESALE_NOTE_FULL) itemNotes[bc] = _presaleNote(p);
+      return;
+    }
+    if (p.stock === 'מעל 200' || p.stock === 'מעל 100') return;
+    var st = getStockNum(p.stock);
+    if (st === 0) addNote(bc, _oosNote);
+    else if (q > st) addNote(bc, _ovNote);
+  });
+  saveOrderSnapshot();
+  updateBar(); renderCards(); updateDraftBtn();
+  var miss = d.unmatched.length ? '\n' + d.unmatched.length + ' שורות לא נמצאו בקטלוג ולא נכנסו.' : '';
+  alert('✅ נכנסו להזמנה ' + d.order.length + ' מוצרים מהקובץ.' + miss);
+}
 
 function openBarcodeScanner() {
   if (!window._audioCtx) {
