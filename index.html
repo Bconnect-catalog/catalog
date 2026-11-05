@@ -477,6 +477,8 @@ html.sunmode .bconnect-tagline,html.sunmode .brands-title{color:#fff}
 .spec-btn:hover{background:rgba(100,100,160,.5);color:#e0e0ff;border-color:rgba(150,150,255,.5)}
 .spec-btn-active{background:rgba(255,107,0,.15);border-color:rgba(255,107,0,.6);color:#ffaa66}
 .spec-btn-active:hover{background:rgba(255,107,0,.28);border-color:rgba(255,107,0,.9);color:#ffcc99}
+.spec-btn-leaflet{background:linear-gradient(90deg,#1a1a1a 0 25%,#f6b89a 25% 50%,#bcd3c9 50% 75%,#7f9bb6 75%);border-color:#fff;color:#fff;font-weight:700;text-shadow:0 0 3px #000,0 0 2px #000}
+.spec-btn-leaflet:hover{filter:brightness(1.15);color:#fff}
 .spec-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
 .spec-modal{background:#1a1a2e;border:1px solid #333;border-radius:16px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px;position:relative;direction:rtl}
 .spec-modal-title{font-size:1rem;font-weight:700;color:#e8e8f0;margin-bottom:4px}
@@ -7580,7 +7582,7 @@ function renderCards() {
                         : '<div class="card-code">' + p.code + '</div>';
           })()}
           <div class="cat-tag" style="border-color:${catColor}60;color:#fff;background:${catColor}30"><span style="filter:brightness(.4) saturate(2)">${catIcon}</span> ${(p.category||p.group||'').replace(' GAMING','')}</div>
-          <button class="spec-btn${hasDescContent(p) ? ' spec-btn-active' : ''}" onclick="openDescModal('${p.barcode}',event)">📄 תיאור</button><button class="spec-btn${hasSpecContent(p) ? ' spec-btn-active' : ''}" onclick="openSpecModal('${p.barcode}',event)">🔧 מפרט טכני</button>${PRODUCT_COMPARISON[p.barcode] ? `<button class="spec-btn spec-btn-active" onclick="openComparisonModal('${p.barcode}',event)">🆚 השוואה</button>` : ''}${p.carton_qty ? `<span class="carton-tag">📦 כמות בקרטון: ${p.carton_qty}</span>` : ''}
+          <button class="spec-btn${hasDescContent(p) ? ' spec-btn-active' : ''}" onclick="openDescModal('${p.barcode}',event)">📄 תיאור</button><button class="spec-btn${hasSpecContent(p) ? ' spec-btn-active' : ''}" onclick="openSpecModal('${p.barcode}',event)">🔧 מפרט טכני</button>${PRODUCT_COMPARISON[p.barcode] ? `<button class="spec-btn spec-btn-active" onclick="openComparisonModal('${p.barcode}',event)">🆚 השוואה</button>` : ''}${(typeof PRODUCT_LEAFLET !== 'undefined' && PRODUCT_LEAFLET[p.barcode]) ? `<button class="spec-btn spec-btn-active spec-btn-leaflet" onclick="openLeafletModal('${p.barcode}',event)">📰 עלון</button>` : ''}${p.carton_qty ? `<span class="carton-tag">📦 כמות בקרטון: ${p.carton_qty}</span>` : ''}
         </div>
         <div class="card-name">${p.name_html||p.name}${p.is_machine ? '<span style="color:#e74c3c;font-weight:700;font-size:.75em;margin-right:4px"> למכונה</span>' : ''}</div>
         ${p.warranty ? '<div style="padding:2px 10px 0;font-size:.72rem;color:#e74c3c;font-weight:700;direction:rtl">🛡 ' + p.warranty + '</div>' : ''}
@@ -21485,6 +21487,56 @@ function openComparisonModal(bc, e) {
 function closeComparisonModal() {
   var ov = document.body._comparisonOverlay;
   if (ov) { ov.remove(); delete document.body._comparisonOverlay; }
+}
+
+/* עלון פרסומי של היצרן בתוך עמוד הפריט (כפתור "📰 עלון" בכרטיס).
+   התמונות יושבות כקבצים ליד index.html (תיקייה לכל עלון) ולא מוטמעות,
+   כדי לא להעמיס על גודל הקטלוג; הן נטענות רק כשפותחים את העלון.
+   video = מספר התמונה שהיא תמונת סרטון — לחיצה עליה פותחת את p.youtube. */
+var PRODUCT_LEAFLETS = {
+  'aventho-y': { title: 'beyerdynamic AVENTHO Y — הכירו את הסדרה', dir: 'aventho-y/', n: 10, video: 10,
+    alt: ['לוגו beyerdynamic', 'ארבעת הצבעים: Liquid Black, Peach Blush, Soft Jade, Blue Fusion', 'AVENTHO Y בארבעה צבעים ועיקרי התכונות',
+          'HEAR YOUR WHY', 'כריות קטיפה להחלפה', 'כריות מגנטיות, גוף צבעוני ואביזרים לבחירה', 'AVENTHO Y עם מיקרופון נשלף',
+          'דונגל USB-C ומיקרופון נשלף בארבעה צבעים', 'שיחות, גיימינג וחיבור אלחוטי', 'סרטון AVENTHO Y'] }
+};
+var PRODUCT_LEAFLET = {
+  '4010118021886': 'aventho-y', '4010118021893': 'aventho-y', '4010118023958': 'aventho-y', '4010118022449': 'aventho-y'
+};
+
+function openLeafletModal(bc, e) {
+  if (e) e.stopPropagation();
+  var p = (typeof ALL_PRODUCTS !== 'undefined' ? ALL_PRODUCTS : PRODUCTS).find(function(x){ return x.barcode === bc; });
+  var L = p && PRODUCT_LEAFLETS[PRODUCT_LEAFLET[bc]];
+  if (!L) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'spec-overlay'; overlay.setAttribute('role','dialog'); overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label', L.title);
+  overlay.onclick = function(ev){ if(ev.target===overlay) closeLeafletModal(); };
+
+  var imgs = '';
+  for (var i = 1; i <= L.n; i++) {
+    var img = '<img src="' + L.dir + (i < 10 ? '0' : '') + i + '.webp" alt="' + (L.alt[i-1] || '') + '" loading="lazy" style="display:block;width:100%;height:auto">';
+    imgs += (i === L.video && p.youtube)
+      ? '<a href="' + p.youtube + '" target="_blank" rel="noopener" title="צפה בסרטון">' + img + '</a>' : img;
+  }
+
+  // הכפתור מחוץ לאזור הגלילה, כדי שיישאר גלוי (גם מעל הלוגו הלבן בראש העלון)
+  overlay.innerHTML = '<div class="spec-modal" style="max-width:600px;padding:0;overflow:hidden;background:#000;display:flex;flex-direction:column">' +
+    '<button class="spec-close-btn" onclick="closeLeafletModal()" aria-label="סגור" style="z-index:2;top:10px;left:10px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.6);color:#fff;font-size:1rem">✕</button>' +
+    '<div style="overflow-y:auto;min-height:0">' + imgs + '</div>' +
+  '</div>';
+
+  overlay._onKey = function(ev){ if (ev.key === 'Escape') closeLeafletModal(); };
+  document.addEventListener('keydown', overlay._onKey);
+  document.body.appendChild(overlay);
+  document.body._leafletOverlay = overlay;
+  overlay.querySelector('.spec-close-btn').focus();
+}
+
+function closeLeafletModal() {
+  var ov = document.body._leafletOverlay;
+  if (ov) { document.removeEventListener('keydown', ov._onKey); ov.remove(); delete document.body._leafletOverlay; }
 }
 
 
