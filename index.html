@@ -1748,6 +1748,7 @@ function _resetSessionState() {
   try {
     window._itemMeta = {};
     window._cachedDraftList = [];
+    window._draftDeletedSig = null;
     window._myCloudDraft = null;
     window._reorderMap = null;
     window._reorderHistory = {};
@@ -10319,6 +10320,8 @@ function updateBar() {
           window._draftAutoSaveTimer = null;
           // העגלה התרוקנה בינתיים (נשלחה הזמנה / הוצאה הצעת מחיר) — אין מה לשמור
           if (!Object.keys(orders).filter(function(k){return k!=='__shipping__';}).length) return;
+          // הטיוטה של העגלה הזו נמחקה ידנית (🗑) והעגלה לא השתנתה מאז — לא להחזיר אותה לענן
+          if (window._draftDeletedSig && window._draftDeletedSig === _cartDraftSig()) return;
           saveOrderDraft();
         }, 30000); // 30 שניות debounce
       }
@@ -11592,7 +11595,15 @@ function _toggleQuoteMode() {
   updateDraftBtn();
 }
 
+// חתימה של העגלה: לקוח + פריטים + מחירים. משמשת לדעת אם העגלה השתנתה מאז שהטיוטה שלה נמחקה.
+function _cartDraftSig() {
+  try {
+    return JSON.stringify([((document.getElementById('customerName')||{}).value||'').trim(), _custNumVal(), orders, orderPrices, window._priceOverride || {}]);
+  } catch(e) { return ''; }
+}
+
 function saveOrderDraft() {
+  window._draftDeletedSig = null;
   var draft = {
     orders: JSON.parse(JSON.stringify(orders)),
     orderPrices: JSON.parse(JSON.stringify(orderPrices)),
@@ -14227,21 +14238,29 @@ function _showDraftPreviewModal(draft, customerName) {
 function _deleteSpecificDraft(customerNameEnc) {
   var customerName = decodeURIComponent(customerNameEnc);
   if (!confirm('למחוק את הטיוטה של "' + customerName + '"?')) return;
+  var _dr = (_cachedDraftList || []).find(function(d){ return (d.customerName || '(ללא שם)') === customerName; }) || {};
+  var customerNumber = String(_dr.customerNumber || '').trim();
+  // הטיוטה של העגלה הפתוחה: השמירה האוטומטית (כל 30 שניות) הייתה מחזירה אותה לענן
+  // מיד אחרי המחיקה — "מחקתי והיא חזרה" (06/11/26). העגלה עצמה נשארת; היא תישמר שוב רק אם תשתנה.
+  var currentName = ((document.getElementById('customerName')||{}).value||'').trim();
+  var currentNum  = _custNumVal();
+  if (currentName === customerName || (customerNumber && currentNum === customerNumber)) {
+    localStorage.removeItem('bc_order_draft');
+    if (window._draftAutoSaveTimer) { clearTimeout(window._draftAutoSaveTimer); window._draftAutoSaveTimer = null; }
+    window._draftDeletedSig = _cartDraftSig();
+  }
+  var _done = function(){ _loadDraftsTab(); updateDraftBtn(); };
   try {
     var _auth = JSON.parse(sessionStorage.getItem('bc_auth')||'{}');
     if (_auth.user) {
       fetch(SHEETS_URL, {
         method: 'POST', mode: 'no-cors',
-        body: JSON.stringify(_credBody({action:'deleteDraft', user:_auth.user, customerName:customerName}))
-      }).catch(function(){});
+        body: JSON.stringify(_credBody({action:'deleteDraft', user:_auth.user, customerName:customerName, customerNumber:customerNumber}))
+      }).then(function(){ setTimeout(_done, 300); }, function(){ setTimeout(_done, 300); });
+      return;
     }
   } catch(_e) {}
-  // אם זו הטיוטה הפעילה — נקה גם localStorage
-  var currentName = ((document.getElementById('customerName')||{}).value||'').trim();
-  if (currentName === customerName) {
-    localStorage.removeItem('bc_order_draft');
-  }
-  setTimeout(function(){ _loadDraftsTab(); updateDraftBtn(); }, 300);
+  setTimeout(_done, 300);
 }
 
 // שכבת הגנה בצד הלקוח: טיוטה שייכת לי אם אני כתבתי אותה, או שהיא נושאת
@@ -14353,6 +14372,8 @@ function _viewMyDraftPreview() {
 function _deleteDraftFromHistory() {
   if (!confirm('למחוק את הטיוטה?')) return;
   localStorage.removeItem('bc_order_draft');
+  if (window._draftAutoSaveTimer) { clearTimeout(window._draftAutoSaveTimer); window._draftAutoSaveTimer = null; }
+  window._draftDeletedSig = _cartDraftSig();
   try {
     var _auth = JSON.parse(sessionStorage.getItem('bc_auth')||'{}');
     if (_auth.user) fetch(SHEETS_URL, {method:'POST',mode:'no-cors',body:JSON.stringify(_credBody({action:'deleteDraft',user:_auth.user}))}).catch(function(){});
