@@ -14253,10 +14253,16 @@ function _deleteSpecificDraft(customerNameEnc) {
   try {
     var _auth = JSON.parse(sessionStorage.getItem('bc_auth')||'{}');
     if (_auth.user) {
-      fetch(SHEETS_URL, {
-        method: 'POST', mode: 'no-cors',
-        body: JSON.stringify(_credBody({action:'deleteDraft', user:_auth.user, customerName:customerName, customerNumber:customerNumber}))
-      }).then(function(){ setTimeout(_done, 300); }, function(){ setTimeout(_done, 300); });
+      // GET ולא POST no-cors — כדי לקרוא את התשובה ולדעת אם משהו באמת נמחק
+      fetch(SHEETS_URL + '?action=deleteDraft' + _credQS() +
+            '&customerName=' + encodeURIComponent(customerName) +
+            '&customerNumber=' + encodeURIComponent(customerNumber))
+        .then(function(r){ return r.json(); })
+        .then(function(res){
+          if (!res || !res.ok) alert('המחיקה נכשלה' + (res && res.error ? ': ' + res.error : ''));
+          else if (!res.deleted) alert('לא נמצאה בשרת טיוטה למחיקה עבור "' + customerName + '"');
+          _done();
+        }, function(){ alert('אין חיבור לשרת — הטיוטה לא נמחקה'); _done(); });
       return;
     }
   } catch(_e) {}
