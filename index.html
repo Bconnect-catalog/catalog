@@ -7697,6 +7697,16 @@ function _isManager() {
   _mgrCache = {k: raw, v: v};
   return v;
 }
+// מנהל (לא admin) רואה היסטוריה וטיוטות של כל הסוכנים — לצפייה בלבד (07/11/26).
+// true = השורה של מישהו אחר, ולכן בלי מחיקה/עריכה/המשך. השרת אוכף את אותו כלל.
+function _mgrViewOnly(agentTag, ownerUser) {
+  if (!_isManager()) return false;
+  var a = {}; try { a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {}
+  if (a.role === 'admin') return false;
+  var tags = [a.user, a.name, a.agent].map(function (t) { return String(t || '').trim().toLowerCase(); }).filter(Boolean);
+  var at = String(agentTag || '').trim().toLowerCase(), ou = String(ownerUser || '').trim().toLowerCase();
+  return !tags.some(function (t) { return t === at || t === ou || (at && at.indexOf(t + ' ') === 0); });
+}
 // מבצע שעוד לא עלה ומוצג רק בזכות התצוגה המוקדמת למנהלים
 function isPromoPreview(p) {
   return isPromoActive(p) && !_promoStarted(p);
@@ -13795,7 +13805,7 @@ function _renderOrderHistoryByRole(hist, role, user, agentName) {
   }
   
   // ללא חיפוש — תצוגה רגילה (קבוצות לפי סוכן/לקוח)
-  if (role === 'admin') {
+  if (role === 'admin' || _isManager()) {
     // מנהל: קבץ לפי סוכן
     var groups = {}; // {agentName: [orders]}
     var _adminName = String(agentName||'').trim();
@@ -13916,8 +13926,8 @@ function _buildHistHTML(hist) {
       + '<span style="color:#f1c40f;font-weight:700;font-size:.85rem">₪' + (h.total||0).toFixed(0) + '</span>'
       + '<button data-xlkey="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0;line-height:1" title="הורד Excel"><img src="data:image/webp;base64,UklGRroBAABXRUJQVlA4IK4BAADQBwCdASodACAAPmEokUWkIqGYDAQAQAYEtgBfKgk0txu8rcBj1veY+i/RY6rxWbWNxPgcso84LVG9Jd2+XbngSQVnvnNMAAD+/qs05tAE4tzA7Brcf4WUmnPsmEexqX9tOy0xF7vaDXtz9OhHxF8uKb8z77be7B927+b2yT+LH+5X3dPw//M8pEFv/9hmPhpy/g049lr3li/5t/qY/tf7xMda+Reby2WA+fKAqvtP1/ziQO3ZmwcgVuLRAe/hEE18uP//odfv81juh+xk+unxliLWCeWEu6ShZp80v7aNvyxf1vW+1gzdEXrJJoZgBhre6Lsv0OP7+exH2D7/Ah8KeAb1bJudjS58vK9T70dmjQ41vsk0HDV5mfx/uWauXcd/s/vm/TaLbJRitULFFIXlgZoQjM/8w5+Q0bXyS5HRu+iiB8MOv4ec89yr6f8f0/y/fTr1klVHzlWPZr8MpKlYmOcUEjM+/6m/it/RkCLVFj77XZgaa6t6QZLLfukDoO85siu+B2pva9+qF8Bq+Gbi+5mQWNYCxsblss0Pv9ZRbhX+dXaDIxe9yVobAAAA" style="height:22px;width:auto" alt="Excel"></button>'
       + '<button data-dup="' + _dupKey + '" style="background:none;border:none;color:#4caf50;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="שכפל הזמנה">📋</button>'
-      + ((_histIsStaff() && h.status !== 'הוחלפה') ? '<button data-edit="' + _dupKey + '" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="עריכת הזמנה — הכמויות חוזרות למלאי וההזמנה המעודכנת תחליף את זו">✏️</button>' : '')
-      + '<button data-del-key="' + _dupKey + '" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="מחק">🗑</button>'
+      + ((_histIsStaff() && h.status !== 'הוחלפה' && !_mgrViewOnly(h.agent, h.customerUser)) ? '<button data-edit="' + _dupKey + '" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="עריכת הזמנה — הכמויות חוזרות למלאי וההזמנה המעודכנת תחליף את זו">✏️</button>' : '')
+      + (_mgrViewOnly(h.agent, h.customerUser) ? '' : '<button data-del-key="' + _dupKey + '" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="מחק">🗑</button>')
       + '</div></div>'
       + '<div style="color:#666;font-size:.72rem;margin-bottom:8px">' + h.date + (h.orderNumber?' | הזמנה: '+h.orderNumber:'') + '</div>'
       + rows + '</div>';
@@ -14004,6 +14014,7 @@ function _renderDraftListAgent(el, list) {
     var itemCount = items.length;
     var totalUnits = items.reduce(function(s,it){return s+(it.qty||0);},0);
     var bcEsc = encodeURIComponent(customerName).replace(/'/g,"\\'");
+    var _viewOnly = _mgrViewOnly(draft.agent, draft.ownerUser);
     // "הלקוח פתח" רק כשהלקוח באמת הזין שורה. השורה בגיליון יכולה להיות של הלקוח גם
     // כשכל הפריטים של הסוכן (שמירת סוכן נכנסת לשורה הקיימת של הלקוח) — אז קובע ה-by של הפריטים.
     // טיוטה ישנה בלי סימון by בכלל — לפי בעל השורה, כמו קודם.
@@ -14019,13 +14030,15 @@ function _renderDraftListAgent(el, list) {
       '<span style="color:#a87fff;font-size:.86rem;font-weight:700">💾 '+escapeHtml(customerName)+_ownerBadge+'</span>'+
       '<div style="display:flex;gap:8px">'+
       '<button onclick="_viewDraftPreview(\''+bcEsc+'\')" style="background:none;border:none;color:#64b5f6;cursor:pointer;font-size:.95rem" title="צפה בטיוטה">👁</button>'+
-      (draft.ownerIsCustomer ? '' : '<button onclick="_deleteSpecificDraft(\''+bcEsc+'\')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.95rem" title="מחק טיוטה">🗑</button>')+
+      ((draft.ownerIsCustomer || _viewOnly) ? '' : '<button onclick="_deleteSpecificDraft(\''+bcEsc+'\')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.95rem" title="מחק טיוטה">🗑</button>')+
       '</div>'+
       '</div>'+
       (customerNumber ? '<div style="color:#ccc;font-size:.74rem;margin-bottom:3px">📞 '+escapeHtml(customerNumber)+'</div>' : '')+
       (updatedAt ? '<div style="color:#666;font-size:.7rem;margin-bottom:5px">⏱ עודכן: '+escapeHtml(updatedAt)+'</div>' : '')+
       '<div style="color:#888;font-size:.74rem;margin-bottom:9px">'+itemCount+' פריטים | '+totalUnits+' יחידות</div>'+
-      '<button onclick="_resumeSpecificDraft(\''+bcEsc+'\')" style="width:100%;padding:8px;border-radius:8px;background:linear-gradient(135deg,#a87fff,#7c4fff);border:none;color:#fff;font-size:.84rem;font-weight:700;cursor:pointer">↩ המשך הזמנה זו</button>'+
+      (_viewOnly
+        ? '<div style="color:#888;font-size:.74rem;text-align:center">👁 לצפייה בלבד'+(draft.ownerName ? ' — הטיוטה של '+escapeHtml(draft.ownerName) : '')+'</div>'
+        : '<button onclick="_resumeSpecificDraft(\''+bcEsc+'\')" style="width:100%;padding:8px;border-radius:8px;background:linear-gradient(135deg,#a87fff,#7c4fff);border:none;color:#fff;font-size:.84rem;font-weight:700;cursor:pointer">↩ המשך הזמנה זו</button>')+
       '</div>';
   });
   el.innerHTML = html;
@@ -22879,10 +22892,15 @@ console.log('[B16] loaded. PRODUCT_DESC=',typeof PRODUCT_DESC,'PRODUCT_SPECS=',t
 
   // באנר מבצע פר-מותג (מוצג בכניסה לטאב המותג)
   var BRAND_BANNERS = {
-    // באנרי מבצע לפי מותג — מוצגים ללקוח בכניסה לטאב המותג. פורמט: 'brandId': "data:image/jpeg;base64,..."
-    // (פליירי חגי תשרי הוסרו 09/10/26 לבקשת המשתמש; המחירים נשארים עד promo_end)
+    // באנרי מבצע לפי מותג — מוצגים ללקוח בכניסה לטאב המותג. פורמט: 'brandId': "<קובץ ליד index.html או data:image/...>"
   };
-  if (CAMPAIGN_OVER) BRAND_BANNERS = {};   // הפליירים יורדים יחד עם המבצע
+  // ══ בלאק פריידי 26 — פליירי אפרת (1080×1920) עם אחוז ההנחה לסוחר במחיר הקנייה (07/11/26) ══
+  // הקבצים בתיקייה bf26/ ליד index.html. יורדים לבד בסוף היום של promo_end (12/12/26).
+  var BF26_END = new Date(2026, 11, 12, 23, 59, 59);
+  if (new Date() <= BF26_END) {
+    ['belkin','beyerdynamic_lifestyle','glorious','hohem','jlab','philips_audio','philips','reolink','steelseries','ugreen']
+      .forEach(function(b){ BRAND_BANNERS[b] = 'bf26/' + b + '.webp?v=1'; });
+  }
   window.BRAND_BANNERS = BRAND_BANNERS;
   // הפרסומת מוצגת ללקוחות בלבד — סוכנים ומנהלים לא רואים אותה (הוראת המשתמש, 02/09/26).
   // נקרא ישירות מ-bc_auth כדי לא להיות תלוי בסדר הטעינה של _isAgentOrAdmin().
@@ -22900,9 +22918,9 @@ console.log('[B16] loaded. PRODUCT_DESC=',typeof PRODUCT_DESC,'PRODUCT_SPECS=',t
     if (imgEl) imgEl.setAttribute('src', src);
     var ov = document.getElementById('ssGamescomOverlay');
     if (ov) { ov.classList.add('visible'); document.body.style.overflow = 'hidden'; }
-    // נסגר לבד אחרי 5 שניות אם המשתמש לא סגר קודם (הוראת המשתמש, 09/10/26)
+    // נסגר לבד אחרי 4 שניות אם המשתמש לא סגר קודם (הוראת המשתמש, 07/11/26 — היה 5)
     clearTimeout(_bannerTimer);
-    _bannerTimer = setTimeout(window.ssGamescomReturn, 5000);
+    _bannerTimer = setTimeout(window.ssGamescomReturn, 4000);
   };
   var _bannerTimer = null;
   window.ssGamescomReturn = function(){
