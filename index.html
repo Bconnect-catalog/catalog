@@ -23354,7 +23354,8 @@ function _agingLoad(num, name) {
     _agingApplyPaid(rows, d.collections);
     var sel = {}; rows.forEach(function (r, i) { if (!r._paid && _agingOverdue(r)) sel[i] = true; });   // ברירת מחדל: מה שבאיחור
     _aging = {num: d.num, name: d.name || name || '', agent: d.agent, rows: rows, contact: d.contact || {}, meta: d.meta || {}, sel: sel, note: '', mode: 'selected',
-              collections: (d.collections || []).slice().sort(function (x, y) { return x.createdAt < y.createdAt ? 1 : -1; })};
+              collections: (d.collections || []).slice().sort(function (x, y) { return x.createdAt < y.createdAt ? 1 : -1; }),
+              receipts: d.receipts || [], showRc: false, rcOpen: {}};
     _agingRender();
   }).catch(function () { body.innerHTML = '<div style="color:#ff8a8a;text-align:center;padding:30px">שגיאת תקשורת</div>'; });
 }
@@ -23394,9 +23395,42 @@ function _agingRender() {
   if (pendTotal) h += '<div style="margin:0 16px 8px;padding:8px 12px;border-radius:10px;background:#123323;border:1px solid #2ec58a;color:#b9f3d6;font-size:.82rem">💰 נגבה ע״י הסוכן וטרם נקלט בהנה״ח: <b dir="ltr">' + _agingMoney(pendTotal) + ' ₪</b> · ' + pendColl.length + ' גבייה/ות — החשבוניות שנגבו לא נספרות בחוב</div>';
   if (dueM > 0.5) h += '<div style="margin:0 16px 8px;padding:8px 12px;border-radius:10px;background:#16304a;border:1px solid #2f6fd6;color:#cfe2ff;font-size:.82rem">📅 עד סוף החודש (' + _agingDate(_agingIso(_agingEom(_agingToday()))) + ') על הלקוח לשלם <b dir="ltr">' + _agingMoney(dueM) + ' ₪</b> <span style="color:#8fb0e0;font-size:.74rem">(כולל מע״מ)</span></div>';
   // סיכום + גיול
-  h += '<div style="display:flex;gap:8px;padding:4px 16px 8px">' +
-    '<div style="flex:1;background:#1b2340;border-radius:10px;padding:8px 10px"><div style="font-size:.72rem;color:#8792b3">יתרה כוללת</div><div style="font-weight:800;direction:ltr;text-align:right">' + _agingMoney(all) + '</div></div>' +
-    '<div style="flex:1;background:#2a1724;border:1px solid #5c2635;border-radius:10px;padding:8px 10px"><div style="font-size:.72rem;color:#e7a0ad">באיחור</div><div style="font-weight:800;color:#ff8a8a;direction:ltr;text-align:right">' + _agingMoney(over) + '</div></div></div>';
+  var rcs = a.receipts || [];
+  // צ'ק פתוח = קבלה שתאריך הערך שלה (מועד הפירעון) עוד לא הגיע
+  var rcOpenChk = function (rc) { return !!rc.valueDate && String(rc.valueDate) > _agingToday(); };
+  var nChk = rcs.filter(rcOpenChk).length, sChk = _agingSum(rcs.filter(rcOpenChk).map(function (rc) { return {open: rc.amount}; }));
+  h += '<div style="display:flex;gap:6px;padding:4px 16px 8px">' +
+    '<div style="flex:1;min-width:0;background:#1b2340;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#8792b3">יתרה כוללת</div><div style="font-weight:800;font-size:.92rem;direction:ltr;text-align:right">' + _agingMoney(all) + '</div></div>' +
+    '<div style="flex:1;min-width:0;background:#2a1724;border:1px solid #5c2635;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#e7a0ad">באיחור</div><div style="font-weight:800;font-size:.92rem;color:#ff8a8a;direction:ltr;text-align:right">' + _agingMoney(over) + '</div></div>' +
+    // טאב קבלות (09/11/26): לחיצה פותחת את רשימת הקבלות, החדשה ראשונה
+    '<button onclick="_agingToggleRc()" aria-expanded="' + (a.showRc ? 'true' : 'false') + '" style="flex:.8;min-width:0;text-align:right;font:inherit;color:inherit;cursor:pointer;background:' + (a.showRc ? '#1a6b45' : '#123323') + ';border:1px solid #2ec58a;border-radius:10px;padding:8px 8px">' +
+      '<div style="font-size:.7rem;color:#9fe8c4">🧾 קבלות ' + (a.showRc ? '▴' : '▾') + '</div><div style="font-weight:800;font-size:.92rem;color:#b9f3d6">' + rcs.length + (nChk ? ' <span style="font-size:.68rem;font-weight:700;color:#ffd27a">· ⏳ ' + nChk + '</span>' : '') + '</div></button></div>';
+  if (a.showRc) {
+    h += '<div style="margin:0 10px 10px;background:#f7f8fb;border-radius:12px;color:#1d2433;overflow:hidden">' +
+      '<div style="padding:9px 12px;font-weight:800;border-bottom:1px solid #e3e6ee">🧾 קבלות <span style="font-weight:600;font-size:.74rem;color:#6b7387">· לחיצה על קבלה מציגה את המסמכים שסגרה</span></div>' +
+      (nChk ? '<div style="padding:7px 12px;background:#fff6e0;border-bottom:1px solid #f0dca8;font-size:.8rem;color:#8a5a00">⏳ <b>' + nChk + '</b> צ׳קים פתוחים שטרם נפרעו: <b dir="ltr">' + _agingMoney(sChk) + ' ₪</b></div>' : '');
+    if (!rcs.length) h += '<div style="padding:18px;text-align:center;color:#6b7387">אין קבלות ב-12 החודשים האחרונים</div>';
+    rcs.forEach(function (rc) {
+      var chk = rcOpenChk(rc), open = !!a.rcOpen[rc.no], docs = (rc.docs || []).filter(function (x) { return Math.abs(Number(x.a) || 0) >= 1; });
+      h += '<div onclick="_agingToggleRcRow(&quot;' + _agingEsc(rc.no) + '&quot;)" style="display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid #e3e6ee;cursor:pointer;background:' + (open ? '#effaf4' : chk ? '#fffaf0' : '#fff') + (chk ? ';border-right:4px solid #e0a325' : '') + '">' +
+        '<span style="color:#1a9a5c;font-weight:900;width:14px">' + (open ? '▾' : '◂') + '</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-weight:800">קבלה ' + _agingEsc(rc.no) + (chk ? ' <span style="font-size:.68rem;font-weight:800;background:#ffe3a3;color:#8a5a00;border-radius:6px;padding:1px 6px">⏳ צ׳ק פתוח · נפרע ' + _agingDate(rc.valueDate) + '</span>' : '') + '</div>' +
+          '<div style="font-size:.76rem;color:#6b7387">' + (rc.date ? _agingDate(rc.date) : '') + (rc.valueDate && rc.valueDate !== rc.date ? ' · תאריך ערך ' + _agingDate(rc.valueDate) : '') + '</div></div>' +
+        '<div style="font-weight:800;direction:ltr;color:#1a7a4c">' + _agingMoney(rc.amount) + '</div></div>';
+      if (open) {
+        h += '<div style="background:#f1f7f3;border-bottom:1px solid #e3e6ee;padding:4px 12px 8px 12px">';
+        if (!docs.length) h += '<div style="padding:6px 0;font-size:.8rem;color:#6b7387">לא נמצא שיוך אוטומטי לחשבוניות (תשלום מצטבר או מקדמה)</div>';
+        docs.forEach(function (x) {
+          h += '<div style="display:flex;gap:8px;align-items:center;padding:6px 0 6px 0;border-top:1px dashed #d5e3da;font-size:.82rem">' +
+            '<div style="flex:1;min-width:0"><b style="direction:ltr;unicode-bidi:embed">' + _agingEsc(x.no) + '</b> <span style="font-size:.72rem;color:#7a8299">' + _agingEsc(x.t) + '</span>' +
+              '<div style="font-size:.72rem;color:#6b7387">' + (x.d ? 'תאריך מסמך ' + _agingDate(x.d) : '') + (x.v ? ' · תאריך ערך ' + _agingDate(x.v) : '') + '</div></div>' +
+            '<div style="font-weight:700;direction:ltr;color:' + (Number(x.a) < 0 ? '#c62828' : '#1d2433') + '">' + _agingMoney(x.a) + '</div></div>';
+        });
+        h += '</div>';
+      }
+    });
+    h += '<div style="padding:7px 12px;font-size:.7rem;color:#7f8bb0">ℹ️ השיוך לחשבוניות משוחזר מהתאמת סכומים בדוח</div></div>';
+  }
   h += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:0 16px 10px;font-size:.66rem;text-align:center">' + buckets.map(function (k) {
     var v = bsum[k] || 0, late = k !== 'Current';
     return '<div style="background:#182039;border-radius:7px;padding:5px 2px"><div style="color:#8792b3;direction:ltr">' + (k === 'Current' ? 'טרם' : k.replace(' + ', '+')) + '</div>' +
@@ -23486,6 +23520,8 @@ function _agingRenderFoot() {
       '<button onclick="_agingSharePdf()" style="' + btn + ';background:#7b52d6">📄 PDF / שיתוף</button></div>';
 }
 
+function _agingToggleRc() { if (!_aging) return; _aging.showRc = !_aging.showRc; _agingRender(); }
+function _agingToggleRcRow(no) { if (!_aging) return; if (_aging.rcOpen[no]) delete _aging.rcOpen[no]; else _aging.rcOpen[no] = true; _agingRender(); }
 function _agingToggle(i, on) { if (!_aging) return; if (on) _aging.sel[i] = true; else delete _aging.sel[i]; _agingRender(); }
 function _agingSelAll(on) { if (!_aging) return; _aging.sel = {}; if (on) _aging.rows.forEach(function (r, i) { if (!r._paid) _aging.sel[i] = true; }); _agingRender(); }
 
