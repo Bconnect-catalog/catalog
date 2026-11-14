@@ -15892,7 +15892,9 @@ async function aiRun(forceModel) {
     // תשובה תקינה = לפחות מוצר אחד מרשימת המועמדים עם הסבר אמיתי; אחרת ניסיון חוזר אחד
     var _okPick = function (x) { return x && byCand[String(x.bc)] && String(x.reason || '').trim().length > 8 && !/placeholder/i.test(x.reason); };
     var picked = await _aiPost({ stage: 'pick', model: model, q: q, context: context, ptype: pd.product_type, cands: lines, parseCost: parsed.cost });
-    if (!(picked.data.picks || []).some(_okPick)) {
+    // תשובה שלילית מכוונת (answer ברור + picks ריק) — מקבלים כמו שהיא, בלי ניסיון חוזר שידחוס מוצרים
+    var _negAns = !(picked.data.picks || []).length && String(picked.data.answer || '').trim().length > 15;
+    if (!_negAns && !(picked.data.picks || []).some(_okPick)) {
       var cost1 = picked.cost || 0;
       picked = await _aiPost({ stage: 'pick', model: model, q: q, context: context, ptype: pd.product_type, cands: lines, parseCost: 0 });
       picked.cost = (picked.cost || 0) + cost1;
