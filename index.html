@@ -15776,7 +15776,7 @@ function aiAltFor(bc) {
 function _aiAltChip(p) {
   try {
     if (!_aiAllowed() || !p || p.coming_soon || p._noInv || getStockNum(p.stock) !== 0 || isPresale(p)) return '';
-    return '<span class="ai-alt-chip" role="button" tabindex="0" onclick="event.stopPropagation();aiAltFor(\'' + p.barcode + '\')">🤖 הפריט אזל - חפש חלופה במלאי</span>';
+    return '<span style="color:#ff6b6b;font-weight:800;font-size:.75rem;margin-inline-end:6px;white-space:nowrap">הפריט אזל</span><span class="ai-alt-chip" role="button" tabindex="0" onclick="event.stopPropagation();aiAltFor(\'' + p.barcode + '\')">🤖 חפש חלופה במלאי</span>';
   } catch (e) { return ''; }
 }
 function _aiScore(it, terms) {
