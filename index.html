@@ -15731,7 +15731,7 @@ function _aiEnsureUi() {
     '#aiModal .ai-oos-h{margin:16px 0 4px;padding-top:10px;border-top:1px dashed #2a4a6d;font-size:.85rem;font-weight:700;color:#fbbf24}' +
     '#aiModal .ai-oos-h ~ .ai-it{opacity:.85}' +
     '#aiModal .ai-err{color:#ff8a80;font-weight:700;margin-top:12px}#aiModal .ai-meta{font-size:.7rem;color:#7d93b0;margin-top:10px}' +
-    '.ai-alt-chip{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;border:1px solid rgba(45,212,214,.7);background:rgba(45,212,214,.12);color:#bff6f7;font-size:.72rem;font-weight:700;cursor:pointer}' +
+    '.ai-alt-chip{display:inline-block;margin-top:4px;padding:3px 10px;border-radius:999px;border:1px solid rgba(45,212,214,.7);background:rgba(45,212,214,.12);color:#bff6f7;font-size:.72rem;font-weight:700;cursor:pointer;white-space:nowrap}' +
     '#aiOpenBtnWrap{padding:0 16px 10px;display:none}#aiOpenBtnWrap button{width:100%;padding:10px;border-radius:999px;border:1.4px solid rgba(45,212,214,.6);background:rgba(12,22,40,.6);color:#eaf6ff;font-weight:700;font-size:.95rem;cursor:pointer}' +
     '@keyframes aiSpin{to{transform:rotate(360deg)}}#aiModal .ai-spin{display:inline-block;width:16px;height:16px;border:3px solid #2a4a6d;border-top-color:#2dd4d6;border-radius:50%;animation:aiSpin 1s linear infinite;vertical-align:middle;margin-inline-end:6px}';
   document.head.appendChild(css);
@@ -15776,7 +15776,7 @@ function aiAltFor(bc) {
 function _aiAltChip(p) {
   try {
     if (!_aiAllowed() || !p || p.coming_soon || p._noInv || getStockNum(p.stock) !== 0 || isPresale(p)) return '';
-    return '<span style="color:#ff6b6b;font-weight:800;font-size:.75rem;margin-inline-end:6px;white-space:nowrap">הפריט אזל</span><span class="ai-alt-chip" role="button" tabindex="0" onclick="event.stopPropagation();aiAltFor(\'' + p.barcode + '\')">🤖 חפש חלופה במלאי</span>';
+    return '<span class="ai-alt-chip" role="button" tabindex="0" onclick="event.stopPropagation();aiAltFor(\'' + p.barcode + '\')">🤖 הפריט אזל - חפש חלופה במלאי</span>';
   } catch (e) { return ''; }
 }
 function _aiScore(it, terms) {
