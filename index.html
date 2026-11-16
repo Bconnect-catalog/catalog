@@ -12346,10 +12346,28 @@ function _xlFinder() {
     if (p.code) { var c = String(p.code).trim().toLowerCase(); if (c && !byCode[c]) byCode[c] = p; }
     if (/^\d{13}$/.test(p.barcode)) { var k = p.barcode.slice(0, 12); by12[k] = (by12[k] === undefined || by12[k] === p) ? p : null; }
   });
-  return function (v) {
-    var s = _xlNorm(v); if (!s) return null;
+  var exact = function (s) {
     return byBc[s] || byBc[s.replace(/^0+/, '')] || byCode[s.toLowerCase()] || (/^\d{12}$/.test(s) && by12[s]) || null;
   };
+  var f = function (v) {
+    var s = _xlNorm(v); if (!s) return null;
+    var p = exact(s);
+    if (p || !/^\d{12,13}$/.test(s)) return p;
+    // טעות הקלדה במסמך: שתי ספרות סמוכות שהתהפכו (16/11/26: 410011800445 במקום 401011800445).
+    // מתקבל רק כשיש מועמד אחד בדיוק, ומסומן בתצוגה לבדיקה (f.fixed).
+    var cand = null, n = 0;
+    for (var i = 0; i < s.length - 1; i++) {
+      if (s[i] === s[i + 1]) continue;
+      var t = s.slice(0, i) + s[i + 1] + s[i] + s.slice(i + 2);
+      var q = exact(t);
+      if (q && q !== cand) { cand = q; n++; }
+    }
+    if (n !== 1) return null;
+    f.fixed[cand.barcode] = s;
+    return cand;
+  };
+  f.fixed = {};
+  return f;
 }
 
 function _xlImportParse(wb, fname) {
@@ -12524,8 +12542,11 @@ function _xlImportPreview(d) {
     var st = getStockNum(p.stock);
     var warn = lim && q > st;
     if (warn) over++;
+    var fx = d.st.find && d.st.find.fixed && d.st.find.fixed[bc];
+    var fixNote = fx ? '<div style="margin-top:2px;font-size:.72rem;font-weight:700;color:#ffb74d">⚠️ במסמך הברקוד ' + esc(fx) +
+      ' (שתי ספרות הפוכות) — זוהה כמוצר הזה, לבדוק</div>' : '';
     return '<tr style="border-top:1px solid var(--border)"><td style="padding:4px 6px">' + esc(p.name) +
-      '<div style="opacity:.6;font-size:.7rem">' + esc(bc) + '</div>' + pxNote + '</td><td style="padding:4px 6px;text-align:center;font-weight:700">' + q +
+      '<div style="opacity:.6;font-size:.7rem">' + esc(bc) + '</div>' + fixNote + pxNote + '</td><td style="padding:4px 6px;text-align:center;font-weight:700">' + q +
       '</td><td style="padding:4px 6px;text-align:center;' + (warn ? 'color:#ff8a65;font-weight:700' : 'opacity:.7') + '">' +
       (lim ? st : '✓') + '</td></tr>';
   }).join('');
@@ -14402,7 +14423,9 @@ function _renderDraftListAgent(el, list) {
       '<span style="color:#a87fff;font-size:.86rem;font-weight:700">💾 '+escapeHtml(customerName)+_ownerBadge+'</span>'+
       '<div style="display:flex;gap:8px">'+
       '<button onclick="_viewDraftPreview(\''+bcEsc+'\')" style="background:none;border:none;color:#64b5f6;cursor:pointer;font-size:.95rem" title="צפה בטיוטה">👁</button>'+
-      ((draft.ownerIsCustomer || _viewOnly) ? '' : '<button onclick="_deleteSpecificDraft(\''+bcEsc+'\')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.95rem" title="מחק טיוטה">🗑</button>')+
+      // 🗑 מוסתר רק כשהלקוח באמת הזין שורות (אותו תנאי של "הלקוח פתח"). שמירת סוכן נכנסת לשורה
+      // הקיימת של הלקוח, ולכן ownerIsCustomer לבדו הסתיר את המחיקה גם בטיוטות שהסוכן פתח (16/11/26)
+      ((_ownerBadge || _viewOnly) ? '' : '<button onclick="_deleteSpecificDraft(\''+bcEsc+'\')" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:.95rem" title="מחק טיוטה">🗑</button>')+
       '</div>'+
       '</div>'+
       (customerNumber ? '<div style="color:#ccc;font-size:.74rem;margin-bottom:3px">📞 '+escapeHtml(customerNumber)+'</div>' : '')+
