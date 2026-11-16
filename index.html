@@ -8195,6 +8195,15 @@ function _syncAllFlashGroups() {
 // נוסף 11/10/26 לחיסול באנדלים UGREEN (מינימום 5 יח' לאותו פריט).
 // מחיר כולל מע"מ לתצוגה: שלם בלי נקודה, אחרת שתי ספרות אגורות (חיסול סוף שנה 26: המחירון ללא מע"מ, ×1.18 מדויק)
 function _fmtVatPrice(v) { v = Math.round(Number(v) * 100) / 100; return v % 1 === 0 ? String(v) : v.toFixed(2); }
+// משתמשים שמקבלים מחיר חיסול בכל כמות, בלי clearance_min_qty (בקשת מרקו 16/11/26 — רק הקוד שלו)
+var CLEARANCE_NO_MIN_USERS = ['marko@bconnect.co.il', 'מרקו'];
+function _clearanceMinWaived() {
+  try {
+    var a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}');
+    var u = String(a.user || '').trim().toLowerCase(), n = String(a.name || '').trim().toLowerCase();
+    return CLEARANCE_NO_MIN_USERS.some(function(x){ x = x.toLowerCase(); return x === u || x === n; });
+  } catch(e) { return false; }
+}
 function _clearanceOk(p) {
   if (!p || p.clearance_price === undefined) return false;
   if (p.clearance_end) {
@@ -8202,6 +8211,7 @@ function _clearanceOk(p) {
     if (new Date() > new Date(_ce[0], _ce[1]-1, _ce[2], 23, 59, 59)) return false;
   }
   if (!p.clearance_min_qty) return true;
+  if (_clearanceMinWaived()) return true;   // מרקו: מחיר חיסול גם מתחת למינימום (16/11/26)
   var _o = (typeof orders !== 'undefined') ? orders : {};
   var q = 0;
   if (p.clearance_group) {
