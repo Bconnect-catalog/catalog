@@ -1419,7 +1419,7 @@ var BC_AUTH_TTL_DAYS = 7;
     <label for="globalSearchBox" class="sr-only">חיפוש מוצר</label>
     <div class="global-search-field">
     <input class="global-search-box" id="globalSearchBox" type="text"
-      placeholder="שם, ברקוד או מק&quot;ט · ‎*מילה = גם בתיאור ובמפרט · ‎*כל *מילה = בנפרד"
+      placeholder="חפש שם, מק&quot;ט או ברקוד" title="טיפ: ‎*מילה מחפש גם בתיאור ובמפרט · ‎*כל *מילה מחפש כל מילה בנפרד"
       oninput="globalSearch(this.value)"
       onfocus="if(this.value) document.getElementById('globalResults').style.display='block'"
     >
@@ -1496,7 +1496,7 @@ var BC_AUTH_TTL_DAYS = 7;
       </div>
     </div>
     <div class="search-row">
-      <input class="search-input" id="search" type="search" placeholder="חיפוש מוצר, קוד, ברקוד · ‎*מילה = גם בתיאור ובמפרט · ‎*כל *מילה = בנפרד" autocomplete="off" aria-label="חפש מוצר. כוכבית בתחילת החיפוש מרחיבה אותו לתיאור המוצר ולמפרט הטכני. כוכבית לפני כל מילה מחפשת כל מילה בנפרד ולא כרצף" role="searchbox">
+      <input class="search-input" id="search" type="search" placeholder="חפש מוצר, מק&quot;ט או ברקוד" title="טיפ: ‎*מילה מחפש גם בתיאור ובמפרט · ‎*כל *מילה מחפש כל מילה בנפרד" autocomplete="off" aria-label="חפש מוצר. כוכבית בתחילת החיפוש מרחיבה אותו לתיאור המוצר ולמפרט הטכני. כוכבית לפני כל מילה מחפשת כל מילה בנפרד ולא כרצף" role="searchbox">
       <button id="scanBtn" onclick="openBarcodeScanner()" title="סרוק ברקוד" aria-label="סרוק ברקוד">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9V5a2 2 0 0 1 2-2h4"/><path d="M15 3h4a2 2 0 0 1 2 2v4"/>
@@ -7739,7 +7739,7 @@ function renderCards() {
       ? 'onclick="showItemPurchaseHistory(\'' + p.barcode + '\', event)" title="הצג את כל הרכישות הקודמות" '
       : '';
     var _rhCur = (_reorderInfo && _rhStaff) ? ';cursor:pointer' : '';
-    return `<div class="card ${qty ? 'has-order' : ''} ${stockCls === 'out' ? 'out' : ''} ${_reorderInfo ? 'reorder-item' : ''}" data-bc="${p.barcode}" role="article" aria-label="${p.name}" tabindex="0">
+    return `<div class="card ${qty ? 'has-order' : ''} ${stockCls === 'out' ? 'out' : ''} ${_reorderInfo ? 'reorder-item' : ''}" data-bc="${p.barcode}" role="article" aria-label="${escapeHtml(p.name)}" tabindex="0">
       <div class="card-img-area" role="button" tabindex="0" aria-label="הגדלת תמונה" onclick="openCardFullscreen('${p.barcode}', event.target.src||'')" style="cursor:zoom-in;position:relative">
         ${imgHtml}
         ${p.gift_barcode ? getGiftThumbHtml(p) : ''}
@@ -9919,15 +9919,15 @@ function buildCatsRow() {
 function getImgHtml(p) {
   // תמונה ישירה מ-clearance
   if (p.img) {
-    return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + p.img + '" alt="' + (p.name||'מוצר') + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
+    return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + p.img + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
   }
   // תמונות מוטמעות (KontrolFreek וכדומה)
   if (p.images && p.images.length) {
     if (p.images.length === 1) {
-      return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + p.images[0] + '" alt="' + (p.name||"מוצר") + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
+      return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + p.images[0] + '" alt="' + escapeHtml(p.name||"מוצר") + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
     }
     var inner = p.images.map(function(s,i){
-      return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + (p.name||"מוצר") + '" style="cursor:zoom-in">';
+      return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + escapeHtml(p.name||"מוצר") + '" style="cursor:zoom-in">';
     }).join('');
     return '<div class="slideshow-wrap" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')">' + inner + '</div>';
   }
@@ -9935,26 +9935,26 @@ function getImgHtml(p) {
     var hd = HOHEM_IMG[p.barcode];
     if (hd.slides && hd.slides.length > 1) {
       var inner = hd.slides.map(function(s,i){
-        return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + (p.name||'מוצר') + '" style="cursor:zoom-in">';
+        return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="cursor:zoom-in">';
       }).join('');
       return '<div class="slideshow-wrap" style="cursor:zoom-in" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')"> ' + inner + '</div>';
     }
     if (hd.p) {
-      return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + hd.p + '" alt="' + (p.name||'מוצר') + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
+      return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:zoom-in"><img src="' + hd.p + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="max-width:90%;max-height:90%;object-fit:contain;padding:8px"></div>';
     }
   }
   if (SLIDES_IMG && SLIDES_IMG[p.barcode]) {
     var slides = SLIDES_IMG[p.barcode];
     var inner = slides.map(function(s,i){
-      return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + (p.name||"מוצר") + '">';
+      return '<img class="slide-img' + (i===0?' slide-active':'') + '" src="' + s + '" alt="' + escapeHtml(p.name||"מוצר") + '">';
     }).join('');
     return '<div class="slideshow-wrap" style="cursor:zoom-in" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')">' + inner + '</div>';
   }
   // אם אין רשומה ב-IMG — נופלים למפת התמונות המאוחדת לפי מותג (ALL_IMGS)
   var d = IMG[p.barcode] || (function(){ try { return (typeof ALL_IMGS !== 'undefined' && ALL_IMGS[p.barcode]) || {}; } catch(e) { return {}; } })();
   if (d.p || d.b) {
-    var left = d.b ? '<img src="' + d.b + '" alt="' + (p.name||'מוצר') + '" style="width:50%;height:100%;object-fit:contain;padding:6px">' : '';
-    var right = d.p ? '<img src="' + d.p + '" alt="' + (p.name||'מוצר') + '" style="width:50%;height:100%;object-fit:contain;padding:6px">' : '';
+    var left = d.b ? '<img src="' + d.b + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="width:50%;height:100%;object-fit:contain;padding:6px">' : '';
+    var right = d.p ? '<img src="' + d.p + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="width:50%;height:100%;object-fit:contain;padding:6px">' : '';
     var sep = (d.p && d.b) ? '<div style="width:1px;background:#2e2e40;flex-shrink:0"></div>' : '';
     if (!d.b && d.p) {
       var imgStyle = (currentBrand === 'phones')
@@ -9966,11 +9966,11 @@ function getImgHtml(p) {
       if (d.p2) {
         var _imgs = d.p3 ? [d.p, d.p2, d.p3] : [d.p, d.p2];
         var _si = _imgs.map(function(s,n){
-          return '<img class="slide-img' + (n===0?' slide-active':'') + '" src="' + s + '" alt="' + (p.name||'מוצר') + '" style="cursor:zoom-in">';
+          return '<img class="slide-img' + (n===0?' slide-active':'') + '" src="' + s + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="cursor:zoom-in">';
         }).join('');
         return '<div class="slideshow-wrap" style="cursor:zoom-in" data-bc="' + p.barcode + '" onclick="event.stopPropagation();openCardFullscreen(\'' + p.barcode + '\', event.target.src||\'\')">' + _si + '</div>';
       }
-      return '<div style="' + areaStyle + ';cursor:zoom-in"><img src="' + d.p + '" alt="' + (p.name||'מוצר') + '" style="' + imgStyle + '"></div>';
+      return '<div style="' + areaStyle + ';cursor:zoom-in"><img src="' + d.p + '" alt="' + escapeHtml(p.name||'מוצר') + '" style="' + imgStyle + '"></div>';
     }
     return '<div style="display:flex;width:100%;height:100%">' + left + sep + right + '</div>';
   }
@@ -10646,7 +10646,7 @@ function updateBar() {
           // הטיוטה של העגלה הזו נמחקה ידנית (🗑) והעגלה לא השתנתה מאז — לא להחזיר אותה לענן
           if (window._draftDeletedSig && window._draftDeletedSig === _cartDraftSig()) return;
           saveOrderDraft();
-        }, 30000); // 30 שניות debounce
+        }, 5000); // 5 שניות debounce — כדי שעגלה לא תלך לאיבוד אם סוגרים את הדף מהר
       }
     }
   } catch(_e) {}
