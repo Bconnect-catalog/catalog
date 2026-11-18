@@ -7963,7 +7963,7 @@ const CUSTOMER_DISCOUNTS = {
 // dist_price שטוח לפי פריט (בלאופונקט / דייהו / שיאומי). לקוח מקבל אותו אם מסומן "מחירון מפיץ" בהגדרות admin
 // (עמודה J בגיליון המשתמשים) או ברשימה הקבועה. dist_min_qty = מינימום יחידות לפריט; dist_clear_line = "ניקוי שורה":
 // רק בקניית כל המלאי של הפריט. מתחת לתנאי — המחיר הרגיל (חיסול/מבצע/סוחר). המחיר הנמוך מנצח, בלי כפל הנחות.
-const DIST_ALWAYS = ['299187'];   // דקל שיווק והפצה
+const DIST_ALWAYS = ['299187', '300044'];   // דקל שיווק והפצה; ד.ב גיים סטאר (18/11/26)
 const DIST_DISC = { brands: [], priceField: 'dist_price', comparePromo: true, dist: true, label: 'מחירון מפיץ' };
 function _isDistCustomer(custId) {
   if (custId && DIST_ALWAYS.indexOf(String(custId).replace(/^0+/, '')) !== -1) return true;
@@ -17920,6 +17920,11 @@ function adminSaveDealerPrice(bc, input) {
   if (!p) return;
   const oldVal = p.dealer_price;
   p.dealer_price = val;
+  // מחיר שהוזן ידנית קובע לשורה — גם על חיסול/מבצע/הנחת לקוח (18/11/26: קודם מחיר החיסול
+  // גבר על העריכה והעגלה לא השתנתה). דרך _priceOverride: תקף רק כשהפריט בעגלה, מתאפס בכניסה, נשמר בטיוטה.
+  window._priceOverride = window._priceOverride || {};
+  window._priceOverride[bc] = val;
+  if (orders[bc] > 0) orderPrices[bc] = val;
   // עדכן VAT בכרטיס
   const vatVal = Math.round(val * 1.18 * 100) / 100;
   const vatEl = document.getElementById('vatprice_' + bc);
