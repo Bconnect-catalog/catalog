@@ -8058,7 +8058,7 @@ function getCompareCustDiscXlNote(p, custDisc) {
   if (custDisc.dist) {
     var _ep = getEffectiveDealerPrice(p);
     if (_distOk(p) && _ep === p.dist_price) return custDisc.label;
-    if (_clearanceOk(p) && _ep === p.clearance_price) return 'מחיר חיסול';
+    if (_clearanceOk(p) && _ep === p.clearance_price) return '🔖 מחיר חיסול';
     return (isPromoActive(p) && _ep === p.promo_dealer_price) ? ('🔥 ' + p.promo_name) : '';
   }
   var _custVal = getCustomerDiscPrice(p, custDisc);
@@ -8885,7 +8885,10 @@ function doExportExcel() {
         else if (p.disc) _xlNote = (_xlNote ? _xlNote + ' | ' : '') + p.disc;
       } else
       // עדיפות הערה לפי המחיר שבפועל נכנס לעגלה: חיסול ← מבצע ← הנחה קבועה (ללא הערה כפולה)
-      if (_clearanceOk(p)) {
+      if (_xlCustDisc && _xlCustDisc.dist) {
+        // לקוח מפיץ: ההערה לפי המחיר שבאמת ניצח (מפיץ / חיסול / מבצע) — 18/11/26
+        _xlNote = (_xlNote ? _xlNote + ' | ' : '') + getCompareCustDiscXlNote(p, _xlCustDisc);
+      } else if (_clearanceOk(p)) {
         _xlNote = (_xlNote ? _xlNote + ' | ' : '') + '🔖 מחיר חיסול';
       } else if (_xlCustDisc && _xlCustDisc.comparePromo) {
         _xlNote = (_xlNote ? _xlNote + ' | ' : '') + getCompareCustDiscXlNote(p, _xlCustDisc);
@@ -9166,7 +9169,10 @@ function doExportQuote() {
       var _xlNote = (itemNotes && itemNotes[p._nk || p.barcode]) ? itemNotes[p._nk || p.barcode] : '';
       var _xlCustDisc = p._nk ? null : getCustomerDiscount(p);
       // עדיפות הערה לפי המחיר שבפועל נכנס לעגלה: חיסול ← מבצע ← הנחה קבועה (ללא הערה כפולה)
-      if (_clearanceOk(p)) {
+      if (_xlCustDisc && _xlCustDisc.dist) {
+        // לקוח מפיץ: ההערה לפי המחיר שבאמת ניצח (מפיץ / חיסול / מבצע) — 18/11/26
+        _xlNote = (_xlNote ? _xlNote + ' | ' : '') + getCompareCustDiscXlNote(p, _xlCustDisc);
+      } else if (_clearanceOk(p)) {
         _xlNote = (_xlNote ? _xlNote + ' | ' : '') + '🔖 מחיר חיסול';
       } else if (_xlCustDisc && _xlCustDisc.comparePromo) {
         _xlNote = (_xlNote ? _xlNote + ' | ' : '') + getCompareCustDiscXlNote(p, _xlCustDisc);
