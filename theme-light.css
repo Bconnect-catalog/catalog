@@ -1,0 +1,140 @@
+/* ══ ערכת עיצוב בהירה — טיוטה 1 (18.11.2026) ══
+   קובץ נפרד שנטען אחרון. מחיקת שורת ה-link מחזירה את העיצוב הכהה כמו שהיה.
+   שלושה צבעים: רקע בהיר, כחול BConnect לניווט, כתום לפעולות קנייה בלבד. */
+:root{
+  /* פלטה סופית: בסיס Modern Minimal (21st) + כחול עמוק שמתאים ללוגו + כתום BConnect לקנייה */
+  --bg:#F8FAFC; --surface:#FFFFFF; --surface2:#F1F5F9; --card:#FFFFFF; --img-bg:#FFFFFF;
+  --border:#E2E8F0; --input-border:#CBD5E1; --divider:#F1F5F9;
+  --text:#1E293B; --muted:#64748B; --placeholder:#94A3B8;
+  --accent:#F28C00; --accent2:#DB7A00;
+  --bc-blue:#2563EB; --bc-blue-50:#EFF6FF; --primary-line:#BFDBFE; --bc-navy:#1E293B;
+  --br:37,99,235; --radius-card:12px;
+  --lt-shadow:0 1px 2px rgba(15,23,42,.05),0 2px 8px rgba(15,23,42,.04);
+}
+html,body{background:var(--bg)!important;color:var(--text)}
+
+/* ── דף הבית ── */
+.home-header{background:#fff!important;border-bottom:1px solid var(--border)!important}
+.home-header::after{display:none}
+.bconnect-logo-img{filter:none!important}
+.bconnect-tagline,html.sunmode .bconnect-tagline{color:var(--muted)!important;text-shadow:none!important}
+.brands-title,html.sunmode .brands-title{color:var(--text)!important;text-shadow:none!important}
+.brands-section::before{display:none!important}
+/* האריחים נשארים כהים: הלוגואים בדף הבית לבנים */
+.brand-card{background:var(--bc-navy)!important;border:1px solid var(--bc-navy)!important;
+  box-shadow:var(--lt-shadow)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.brand-card::before,.brand-card::after{display:none!important}
+.brand-card:hover{border-color:var(--bc-blue)!important;box-shadow:0 6px 18px rgba(34,57,143,.25)!important}
+.global-search-box{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;
+  box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.global-search-box::placeholder{color:var(--placeholder)!important;opacity:1!important}
+.global-search-box:focus{border-color:var(--bc-blue)!important;box-shadow:0 0 0 3px rgba(34,57,143,.15)!important}
+
+/* ── סרגלי הקטלוג ── */
+.filters-row,.cats-row{background:rgba(255,255,255,.97)!important;border-bottom:1px solid var(--border)!important}
+.filter-btn,.cat-btn,.cat-btn-all{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;
+  text-shadow:none!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.filter-btn.active,.cat-btn.active,.cat-btn-all.active{background:var(--bc-blue)!important;border-color:var(--bc-blue)!important;color:#fff!important}
+.cat-btn-all.active::before,.cat-btn.active::before,.filter-btn.active::before,
+.cat-btn-all.active::after,.cat-btn.active::after,.filter-btn.active::after{display:none!important}
+.filter-btn.filter-sale{color:#B85C00!important;border-color:#F2B36B!important}
+.filter-btn.filter-sale.active{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
+.filter-btn.filter-recent{color:#1E7A45!important;border-color:#9ED3B4!important}
+.filter-btn.filter-restock{color:#1C5F99!important;border-color:#9CC7EC!important}
+.cat-count{color:inherit!important;opacity:.7}
+.back-btn,.home-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
+
+/* ── כרטיס מוצר ── */
+.card{background:var(--card)!important;border:1px solid var(--border)!important;box-shadow:var(--lt-shadow)!important;
+  -webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.card:hover{border-color:var(--input-border)!important;box-shadow:0 6px 18px rgba(20,26,38,.10)!important}
+.card.has-order{border-color:var(--bc-blue)!important;box-shadow:0 0 0 1px var(--bc-blue)!important}
+.card.reorder-item{border-color:#2E9E5B!important;box-shadow:0 0 0 2px #2E9E5B!important}
+.card-img-area{background:var(--img-bg)!important;border-bottom:1px solid var(--border)}
+.card-img-area::before{display:none!important}
+.card-img-area img[src$=".webp"],.card-img-area .slide-img[src$=".webp"]{filter:none!important}
+.card-img-wrap img.pi2{background:var(--img-bg)!important}
+.card-name,html.sunmode .card-name{color:var(--text)!important;text-shadow:none!important}
+.card-link{color:var(--muted)!important}
+.barcode-row{color:var(--muted)!important}
+.cat-tag{background:var(--bc-blue-50)!important;border:1px solid var(--primary-line)!important;color:var(--bc-blue)!important}
+.cat-tag span{filter:none!important}
+.spec-btn{background:var(--surface2)!important;border:1px solid var(--input-border)!important;color:#3A4358!important}
+.spec-btn-active{background:#FFF4E5!important;border-color:#F2B36B!important;color:#9A4F00!important}
+.price-row-item{border-bottom:1px solid var(--divider)!important}
+.price-label{color:var(--muted)!important}
+.price-val,html.sunmode .price-val{color:var(--text)!important;text-shadow:none!important}
+.price-val[style*="color:#fff"]{color:var(--text)!important}
+.promo-price-row .price-label[style*="#f5c842"],.promo-price-row .price-val[style*="#f5c842"]{color:#A15C00!important}
+.promo-price-row .price-label[style*="#ff9800"],.promo-price-row .price-val[style*="#ff9800"]{color:#D35400!important}
+.card-name span[style*="#e74c3c"]{color:#C0392B!important}
+.order-label,.item-note-label{color:var(--muted)!important}
+.qty-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important}
+.qty-btn:hover,.qty-btn:active{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
+.qty-input{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
+.qty-input.has-value{background:#FFF4E5!important;border-color:var(--accent)!important;color:#9A4F00!important;box-shadow:none!important}
+.item-note-row{border-top:1px solid var(--divider)!important}
+.item-note-input{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
+.oos-note{color:var(--muted)!important}
+
+
+/* ── כפתורי דף הבית ── */
+#reorderBtnsRow button{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;text-shadow:none!important}
+#reorderBtnsRow button:first-child{background:var(--accent)!important;border:1px solid var(--accent)!important;color:#fff!important;box-shadow:0 4px 14px rgba(242,140,0,.30)!important}
+#reorderBtnsRow button:not(:first-child){background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:var(--lt-shadow)!important}
+
+/* ── רשת המותגים: יותר מותגים בשורה ── */
+.brands-section{max-width:1100px!important}
+@media (min-width:900px){.brands-grid{grid-template-columns:repeat(4,1fr)!important}}
+@media (max-width:600px){.brands-grid{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}}
+
+/* ── השעון הוסר (לפי התוכנית) ── */
+#liveClock{display:none!important}
+
+/* ── סרגל עליון בעמוד מותג ── */
+.cat-topbar{background:rgba(255,255,255,.97)!important;border-bottom:1px solid var(--border)!important}
+.search-input{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important}
+.search-input::placeholder{color:var(--placeholder)!important}
+.search-input:focus{border-color:var(--bc-blue)!important;box-shadow:0 0 0 3px rgba(34,57,143,.15)!important}
+#scanBtn,.sort-select{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important}
+.count-badge{background:var(--bc-blue-50)!important;color:var(--bc-blue)!important;border-color:var(--primary-line)!important}
+
+.card{border-radius:var(--radius-card)!important}
+
+/* ── סרגל עליון בנייד: כשמופיעה העגלה הקטנה, הלוגו נמחץ עד שנשארת אות אחת ── */
+@media (max-width:600px){
+  .cat-topbar-row1 .count-badge{display:none!important}
+  .cat-topbar-row1 .home-btn{font-size:0!important;padding:6px 10px!important}
+  .cat-topbar-row1 .home-btn::before{content:'↩ מותגים';font-size:.8rem;font-weight:600}
+  .brand-title-bar{min-width:90px!important}
+  #catalogBrandLogo{max-width:100%!important;height:auto!important;max-height:28px!important}
+}
+
+/* ── סרגל העגלה והזמנה ── */
+.order-bar{background:rgba(255,255,255,.98)!important;border-top:1px solid var(--border)!important;
+  box-shadow:0 -6px 24px rgba(15,23,42,.10)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.bar-info{color:var(--muted)!important}
+.bar-info [style*="#90ee90"]{color:#15803D!important}
+.bar-total{color:#B45309!important}
+.bar-vat{color:var(--muted)!important}
+.modal-input,select.modal-input,.order-bar select{background:#fff!important;color:var(--text)!important;border:1px solid var(--input-border)!important;
+  box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.modal-input::placeholder{color:var(--placeholder)!important;opacity:1!important}
+.modal-input:focus{border-color:var(--bc-blue)!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important}
+.send-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;
+  box-shadow:none!important;text-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.send-btn::before,.send-btn::after{display:none!important}
+/* הכפתור הראשי של ההזמנה — כתום */
+#sendOrderBtn,.send-btn.primary{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
+
+/* ── חלון מפרט/תיאור ── */
+.spec-modal{background:#fff!important;border:1px solid var(--border)!important;box-shadow:0 20px 50px rgba(15,23,42,.18)!important}
+.spec-modal-title{color:var(--text)!important}
+.spec-modal-sub{color:var(--muted)!important}
+.spec-table tr:nth-child(odd){background:var(--surface2)!important}
+.spec-table td{border-bottom:1px solid var(--border)!important}
+.spec-table td:first-child{color:var(--muted)!important}
+.spec-table td:last-child{color:var(--text)!important}
+.spec-modal [style*="color:#fff"],.spec-modal [style*="color:#e8e8f0"]{color:var(--text)!important}
+.modal-box{background:#fff!important;color:var(--text)}
+.order-bar button:not(#sendOrderBtn){background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important;text-shadow:none!important}
