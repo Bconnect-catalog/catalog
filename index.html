@@ -9060,7 +9060,8 @@ function doExportExcel() {
 
     var fname = 'BConnect_Order_'+(customer||'לקוח')+'_'+(custNum||'')+'_'+
       d.getDate()+'_'+(d.getMonth()+1)+'_'+d.getFullYear()+'.xlsx';
-    XLSX.writeFile(wb, fname);
+    if (window._xlMailMode) window._xlMailMode.file = { fname: fname, b64: XLSX.write(wb, { bookType: 'xlsx', type: 'base64' }) };
+    else XLSX.writeFile(wb, fname);
 
     _saveHistory(orderNum);
     deductStock();
@@ -13184,6 +13185,53 @@ function _editNetDeduct(deductItems) {
 }
 
 // ייצוא XL מהיסטוריה — ללא עדכון מלאי וללא שמירת היסטוריה חדשה
+// ══ אקסל של הזמנה מההיסטוריה — במייל (ניסוי, 23/11/26) ══
+// אותו קובץ שכפתור ה-Excel בהיסטוריה מוריד (בלי לגעת במלאי ובלי לשמור היסטוריה),
+// רק שבמקום הורדה למכשיר הוא נשלח ל-Apps Script ונשלח במייל עם הקובץ מצורף.
+// המטרה: סוכן שמקבל הזמנה מלקוח בוואטסאפ (טקסט) יקבל אותה כקובץ, יבדוק ויעביר
+// למשרד — במקום לשכפל אותה. בשלב הניסוי פתוח רק למרקו, והמייל נשלח אליו בלבד.
+// ⚠️ ההרשאה נבדקת גם בשרת (XL_MAIL_USERS ב-Code.gs) — הרשימה כאן רק מסתירה את הכפתור.
+var XL_MAIL_USERS = ['marko@bconnect.co.il'];
+function _xlMailAllowed() {
+  var a = {}; try { a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}'); } catch (e) {}
+  return XL_MAIL_USERS.indexOf(String(a.user || '').trim().toLowerCase()) !== -1;
+}
+function mailHistoryXls(key, btn) {
+  if (!_xlMailAllowed()) return;
+  if (btn && btn.dataset.busy) return;
+  var hist = window._loadedHistory || [];
+  var h = null, decoded = decodeURIComponent(key);
+  for (var i = 0; i < hist.length; i++) {
+    if (hist[i].orderNumber && String(hist[i].orderNumber) === decoded) { h = hist[i]; break; }
+    if ((hist[i].date||'')+'||'+(hist[i].agent||'')+'||'+(hist[i].customerName||'')+'||'+(hist[i].customerNumber||'') === decoded) { h = hist[i]; break; }
+  }
+  window._xlMailMode = {};
+  var file = null;
+  try { exportHistoryToExcel(key); file = window._xlMailMode.file; } finally { window._xlMailMode = null; }
+  if (!file || !file.b64) { alert('לא הצלחתי לבנות את קובץ האקסל'); return; }
+  var orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.dataset.busy = '1'; btn.innerHTML = '⏳'; }
+  fetch(SHEETS_URL, { method: 'POST', body: JSON.stringify(_credBody({
+      action: 'mailOrderXls', fname: file.fname, b64: file.b64,
+      customerName: h ? (h.customerName || '') : '', customerNumber: h ? (h.customerNumber || '') : '',
+      orderDate: h ? (h.date || '') : '', orderAgent: h ? (h.agent || '') : '', orderUser: h ? (h.customerUser || '') : '',
+      orderTotal: h ? (Number(h.total) || 0) : 0, orderNumber: h ? (h.orderNumber || '') : '' })) })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (d && d.ok) { if (btn) btn.innerHTML = '✅'; _toastMsg('📧 האקסל נשלח ל-' + (d.to || 'המייל שלך')); }
+      else { if (btn) btn.innerHTML = '⚠️'; alert('השליחה נכשלה: ' + ((d && d.error) || 'שגיאה לא ידועה')); }
+    })
+    .catch(function () { if (btn) btn.innerHTML = '⚠️'; alert('השליחה נכשלה — אין חיבור לשרת'); })
+    .then(function () { if (btn) setTimeout(function () { btn.innerHTML = orig; delete btn.dataset.busy; }, 4000); });
+}
+function _toastMsg(t) {
+  try { if (typeof showToast === 'function') return showToast(t); } catch (e) {}
+  var d = document.createElement('div');
+  d.textContent = t; d.setAttribute('role', 'status');
+  d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e7e34;color:#fff;padding:10px 18px;border-radius:10px;z-index:99999;font-size:.9rem;direction:rtl';
+  document.body.appendChild(d); setTimeout(function () { d.remove(); }, 3500);
+}
+
 function exportHistoryToExcel(key) {
   try {
     var decoded = decodeURIComponent(key);
@@ -14290,6 +14338,9 @@ function _attachHistButtons(el) {
   el.querySelectorAll('button[data-xlkey]').forEach(function(btn) {
     btn.addEventListener('click', function() { exportHistoryToExcel(this.getAttribute('data-xlkey')); });
   });
+  el.querySelectorAll('button[data-xlmail]').forEach(function(btn) {
+    btn.addEventListener('click', function() { mailHistoryXls(this.getAttribute('data-xlmail'), this); });
+  });
 }
 
 // debounce timer לשדה החיפוש
@@ -14351,6 +14402,7 @@ function _buildHistHTML(hist) {
       + statusBadge
       + '<span style="color:#f1c40f;font-weight:700;font-size:.85rem">₪' + (h.total||0).toFixed(0) + '</span>'
       + '<button data-xlkey="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0;line-height:1" title="הורד Excel"><img src="img/2ca918b96a90.webp" style="height:22px;width:auto" alt="Excel"></button>'
+      + (_xlMailAllowed() ? '<button data-xlmail="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;font-size:1.15rem;line-height:1" title="שלח לי את האקסל במייל" aria-label="שלח לי את האקסל במייל">📧</button>' : '')
       + '<button data-dup="' + _dupKey + '" style="background:none;border:none;color:#4caf50;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="שכפל הזמנה">📋</button>'
       + ((_histIsStaff() && h.status !== 'הוחלפה') ? '<button data-edit="' + _dupKey + '" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="עריכת הזמנה — הכמויות חוזרות למלאי וההזמנה המעודכנת תחליף את זו">✏️</button>' : '')
       + (_mgrViewOnly(h.agent, h.customerUser) ? '' : '<button data-del-key="' + _dupKey + '" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="מחק">🗑</button>')
