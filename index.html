@@ -2421,9 +2421,10 @@ function loadInventoryFromSheet() {
             // 23/11/26: מוצר שהוקם כ"חדש בקרוב" עם cs_restock:true ונכנס למלאי בשיטס מצטרף אוטומטית לטאב "נכנס למלאי"
             try { if (p.cs_restock && typeof RESTOCK_SET !== 'undefined' && !RESTOCK_SET[String(p.barcode)]) { RESTOCK_SET[String(p.barcode)] = true; RESTOCK.barcodes.push(String(p.barcode)); window._restockAuto = true; } } catch(e) {}
           }
+          try { if (_isFutureOrder(p) && _hasRealStock(p.stock) && typeof itemNotes !== 'undefined' && itemNotes[p.barcode] === FUTURE_ORDER_NOTE) delete itemNotes[p.barcode]; } catch (e) {}
           // אם זה מוצר ב-presale שקיבל מלאי — נקה הערת מכירה מוקדמת ועדכן מחיר עגלה
           if (typeof PRESALE_BARCODES !== 'undefined' && PRESALE_BARCODES.indexOf(String(p.barcode)) !== -1 && _hasRealStock(p.stock)) {
-            if (typeof itemNotes !== 'undefined' && (itemNotes[p.barcode] === PRESALE_NOTE || itemNotes[p.barcode] === PRESALE_NOTE_FULL)) delete itemNotes[p.barcode];
+            if (typeof itemNotes !== 'undefined' && _isPresaleNote(itemNotes[p.barcode])) delete itemNotes[p.barcode];
             if (typeof orders !== 'undefined' && orders[p.barcode] && typeof orderPrices !== 'undefined') {
               orderPrices[p.barcode] = p.dealer_price;
             }
@@ -7815,7 +7816,7 @@ function renderCards() {
               : p.price_drop ? '<div class="sale-tag">📉 ירידת מחיר</div>' : ''
             )}
           </div>
-          ${(isPresale(p) && !_isViewOnly) ? '<div class="presale-badge">⚡ מכירה מוקדמת</div>' : ''}
+          ${(isPresale(p) && !_isViewOnly) ? (_isFutureOrder(p) ? '<div class="presale-badge" style="background:linear-gradient(135deg,#1e6fa8,#4facff);animation:none;box-shadow:0 0 10px rgba(79,172,255,.7)">📦 הזמנה עתידית</div>' : '<div class="presale-badge">⚡ מכירה מוקדמת</div>') : ''}
         </div>
       </div>
       <div class="card-body">
@@ -8164,7 +8165,7 @@ const SALE_BARCODES = ['4010118483660','4010118474743','4010118459047','40101187
 // הרשימה מוחלפת בכל כניסה חדשה (מוצרים מהכניסה הקודמת יוצאים מהטאב). הכפתור מופיע רק
 // בעמוד מותג שיש בו מוצרים מהרשימה, והשם נושא את תאריך הכניסה.
 // 23/11/26: משלוח UGREEN מאפרת (Book6, "הועברו לגיור") — שם זמני "עתיד להיכנס למלאי" (בקשת מרקו, ללקוח סלפי). הרשימה הקודמת (15–21.10) גובתה ב-tools/restock_backup_2026-10-15.json
-const RESTOCK = { date: '', label: 'עתיד להיכנס למלאי', barcodes: ["6941876267484", "6941876232611", "6941876267514", "6941876267545", "6941876288007", "6942752010958", "6941876280704", "6957303811151", "6957303811281", "6957303811670", "6957303812387", "6957303816484", "6941876215348", "6941876215751", "6941876215966", "6941876215980", "6941876216017", "6941876218134", "6957303821037", "6957303822560", "6957303828579", "6941876223565", "6941876228744", "6941876228775", "6957303831272", "6957303834013", "6957303834457", "6957303837915", "6941876230259", "6941876230426", "6941876236251", "6941876237548", "6941876237555", "6941876237562", "6957303842896", "6941876240180", "6941876241675", "6941876242979", "6941876243112", "6941876243204", "6941876243792", "6941876247851", "6941876247868", "6957303851508", "6957303853373", "6957303853403", "6957303855643", "6957303857067", "6957303857371", "6957303859948", "6941876255177", "6941876293100", "6941876259670", "6957303861163", "6957303861286", "6957303861583", "6957303864089", "6957303865185", "6941876260065", "6941876261857", "6941876263837", "6941876263851", "6941876263875", "6941876267378", "6941876268221", "6941876268252", "6941876268283", "6941876268689", "6941876269051", "6957303873364", "6957303876433", "6941876277667", "6941876275861", "6941876276271", "6941876276288", "6941876276424", "6957303883721", "6957303883905", "6957303884025", "6957303884032", "6957303884049", "6957303884056", "6957303884292", "6957303885398", "6957303887859", "6941876284009", "6957303895502", "6957303896691", "6957303896714", "6957303896721", "6957303896868", "6957303898558", "6941876221820", "6941876291878", "6941876295890", "6941876296736", "6941876281459", "6941876269983", "6941876269907", "6941876263165", "6941876243273", "6941876222070", "6941876226832", "6941876210862", "6941876242924", "6941876246830"] };
+const RESTOCK = { date: '', label: 'עתיד להיכנס למלאי', future: true, barcodes: ["6941876267484", "6941876232611", "6941876267514", "6941876267545", "6941876288007", "6942752010958", "6941876280704", "6957303811151", "6957303811281", "6957303811670", "6957303812387", "6957303816484", "6941876215348", "6941876215751", "6941876215966", "6941876215980", "6941876216017", "6941876218134", "6957303821037", "6957303822560", "6957303828579", "6941876223565", "6941876228744", "6941876228775", "6957303831272", "6957303834013", "6957303834457", "6957303837915", "6941876230259", "6941876230426", "6941876236251", "6941876237548", "6941876237555", "6941876237562", "6957303842896", "6941876240180", "6941876241675", "6941876242979", "6941876243112", "6941876243204", "6941876243792", "6941876247851", "6941876247868", "6957303851508", "6957303853373", "6957303853403", "6957303855643", "6957303857067", "6957303857371", "6957303859948", "6941876255177", "6941876293100", "6941876259670", "6957303861163", "6957303861286", "6957303861583", "6957303864089", "6957303865185", "6941876260065", "6941876261857", "6941876263837", "6941876263851", "6941876263875", "6941876267378", "6941876268221", "6941876268252", "6941876268283", "6941876268689", "6941876269051", "6957303873364", "6957303876433", "6941876277667", "6941876275861", "6941876276271", "6941876276288", "6941876276424", "6957303883721", "6957303883905", "6957303884025", "6957303884032", "6957303884049", "6957303884056", "6957303884292", "6957303885398", "6957303887859", "6941876284009", "6957303895502", "6957303896691", "6957303896714", "6957303896721", "6957303896868", "6957303898558", "6941876221820", "6941876291878", "6941876295890", "6941876296736", "6941876281459", "6941876269983", "6941876269907", "6941876263165", "6941876243273", "6941876222070", "6941876226832", "6941876210862", "6941876242924", "6941876246830"] };
 const RESTOCK_SET = {}; RESTOCK.barcodes.forEach(function(b){ RESTOCK_SET[String(b)] = true; });
 function _syncRestockBtn() {
   var btn = document.getElementById('restockBtn');
@@ -8198,16 +8199,25 @@ function isPriceUpdateProduct(p){
 const PRESALE_DISCOUNT = 0.05; // 5% הנחה ממחיר סוחר ללא מע"מ
 const PRESALE_NOTE = 'מחיר מיוחד למכירה מוקדמת';
 const PRESALE_NOTE_FULL = 'מכירה מוקדמת — מלאי בקרוב';
+// 23/11/26: הזמנה עתידית — כשטאב RESTOCK במצב future ("עתיד להיכנס למלאי"), מוצר מהרשימה
+// שהמלאי שלו 0 פתוח להזמנה (לקוח וסוכן) במחיר הרגיל שלו (כולל הנחת לקוח/מבצע), עם הערה בשורה.
+// כשהמלאי נכנס בשיטס — הוא נמכר כרגיל וההערה יורדת.
+const FUTURE_ORDER_NOTE = 'הזמנה עתידית — עתיד להיכנס למלאי';
+function _isFutureOrder(p) {
+  try { return !!(p && p.barcode && RESTOCK.future && RESTOCK_SET[String(p.barcode)] === true && PRESALE_BARCODES.indexOf(String(p.barcode)) === -1 && !p.quote_only); } catch (e) { return false; }
+}
+function _isPresaleNote(n) { return n === PRESALE_NOTE || n === PRESALE_NOTE_FULL || n === FUTURE_ORDER_NOTE; }
 
 function isPresale(p) {
   // מכירה מוקדמת פעילה רק כשהברקוד ברשימה והמלאי 0 (אזל)
   if (!p || !p.barcode) return false;
+  if (_isFutureOrder(p)) return getStockNum(p.stock) === 0 && !(p.incoming_qty > 0);
   if (PRESALE_BARCODES.indexOf(String(p.barcode)) === -1) return false;
   return getStockNum(p.stock) === 0;
 }
 
-function _presaleFull(p) { return PRESALE_FULL_PRICE.indexOf(String(p.barcode)) !== -1; }
-function _presaleNote(p) { return _presaleFull(p) ? PRESALE_NOTE_FULL : PRESALE_NOTE; }
+function _presaleFull(p) { return _isFutureOrder(p) || PRESALE_FULL_PRICE.indexOf(String(p.barcode)) !== -1; }
+function _presaleNote(p) { return _isFutureOrder(p) ? FUTURE_ORDER_NOTE : (_presaleFull(p) ? PRESALE_NOTE_FULL : PRESALE_NOTE); }
 function getPresalePrice(p) {
   if (_presaleFull(p)) return p.dealer_price;
   // 5% הנחה ממחיר סוחר ללא מע"מ, מעוגל
@@ -8339,7 +8349,7 @@ function getEffectiveDealerPrice(p) {
     }
   }
   // מכירה מוקדמת — מחיר מיוחד 95% ממחיר סוחר ללא מע"מ
-  if (isPresale(p)) return getPresalePrice(p);
+  if (isPresale(p) && !_isFutureOrder(p)) return getPresalePrice(p);
   // לקוח מימושים — תמיד dealer_price ללא מבצע
   try {
     var _auth = JSON.parse(sessionStorage.getItem('bc_auth') || '{}');
@@ -8604,7 +8614,7 @@ function updateOrder(bc, input) {
       orders[bc] = val;
       orderPrices[bc] = getEffectiveDealerPrice(p);
       // הערה אוטומטית — נסמנת כ-auto לטובת ניקוי אוטומטי בעת קליטת מלאי
-      if (!itemNotes[bc] || itemNotes[bc] === PRESALE_NOTE || itemNotes[bc] === PRESALE_NOTE_FULL) {
+      if (!itemNotes[bc] || _isPresaleNote(itemNotes[bc])) {
         itemNotes[bc] = _presaleNote(p);
         var card = input.closest('[data-bc]');
         if (card) {
@@ -8615,7 +8625,7 @@ function updateOrder(bc, input) {
     } else {
       delete orders[bc];
       delete orderPrices[bc];
-      if (itemNotes[bc] === PRESALE_NOTE || itemNotes[bc] === PRESALE_NOTE_FULL) delete itemNotes[bc];
+      if (_isPresaleNote(itemNotes[bc])) delete itemNotes[bc];
     }
     saveOrderSnapshot();
     updateBar();
@@ -12736,7 +12746,7 @@ function _xlImportApply(d, merge) {
     else delete window._priceOverride[bc];
     orderPrices[bc] = getEffectiveDealerPrice(p);
     if (isPresale(p)) {
-      if (!itemNotes[bc] || itemNotes[bc] === PRESALE_NOTE || itemNotes[bc] === PRESALE_NOTE_FULL) itemNotes[bc] = _presaleNote(p);
+      if (!itemNotes[bc] || _isPresaleNote(itemNotes[bc])) itemNotes[bc] = _presaleNote(p);
       return;
     }
     if (p.stock === 'מעל 200' || p.stock === 'מעל 100') return;
