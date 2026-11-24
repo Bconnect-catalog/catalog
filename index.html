@@ -5418,6 +5418,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991034240",
   "name": "אוזניות Jabra Evolve 20, מונו MS, מתאם USB C/A",
   "category": "אוזניות Evolve",
+  "audio_type": "MONO",
   "consumer_price": 259.0,
   "dealer_price": 160.0,
   "stock": "מעל 50",
@@ -5524,6 +5525,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991027433",
   "name": "מערכת ראש מתקדמת עם סינון רעשים אקטיבי חיבור USB-C",
   "category": "אוזניות Evolve2",
+  "audio_type": "STEREO",
   "consumer_price": 999.0,
   "dealer_price": 585.0,
   "stock": 0,
@@ -5624,6 +5626,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991022841",
   "name": "אוזניות סטריאו Jabra Evolve2 65 USB-C מדגם Microsoft Teams",
   "category": "אוזניות Evolve2",
+  "audio_type": "STEREO",
   "consumer_price": 1299.0,
   "dealer_price": 879.0,
   "stock": "מעל 50",
@@ -5738,6 +5741,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991024364",
   "name": "מערכת ראש אלחוטית עם סינון רעשים אקטיבי ו- 8 מיקרופונים MS USB-C עם מעמד טעינה",
   "category": "אוזניות Evolve2",
+  "audio_type": "STEREO",
   "consumer_price": 1990.0,
   "dealer_price": 1345.0,
   "stock": "מעל 50",
@@ -5754,6 +5758,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991024326",
   "name": "מערכת ראש אלחוטית עם סינון רעשים אקטיבי ו- 8 מיקרופונים MS USB-A עם מעמד טעינה",
   "category": "אוזניות Evolve2",
+  "audio_type": "STEREO",
   "consumer_price": 1799.0,
   "dealer_price": 1179.0,
   "stock": 11,
@@ -5786,6 +5791,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991035117",
   "name": "Jabra Evolve3 75 – אוזניות אלחוטיות ANC ו-ClearVoice חיבור USB-A",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 1949.0,
   "dealer_price": 990.0,
   "stock": "מעל 50",
@@ -5802,6 +5808,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991035100",
   "name": "Jabra Evolve3 75 – אוזניות אלחוטיות ANC ו-ClearVoice חיבור USB-A משטח טעינה אלחוטי",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 2259.0,
   "dealer_price": 0,
   "stock": 39,
@@ -5818,6 +5825,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991035094",
   "name": "Jabra Evolve3 75 – אוזניות אלחוטיות ANC ו-ClearVoice חיבור USB-C",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 1949.0,
   "dealer_price": 1250.0,
   "stock": "מעל 50",
@@ -5834,6 +5842,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991035087",
   "name": "Jabra Evolve3 75 – אוזניות אלחוטיות ANC ו-ClearVoice חיבור USB-C משטח טעינה אלחוטי",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 2259.0,
   "dealer_price": 1450.0,
   "stock": 49,
@@ -5850,6 +5859,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991034431",
   "name": "Jabra Evolve3 85 אוזניות Over-Ear אלחוטיות עם סינון רעשים AI וטכנולוגיית ClearVoice Type-A",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 2649.0,
   "dealer_price": 1699.0,
   "stock": "מעל 50",
@@ -5866,6 +5876,7 @@ const JABRA_PRODUCTS = [
   "barcode": "5706991034455",
   "name": "Jabra Evolve3 85 אוזניות Over-Ear אלחוטיות עם סינון רעשים AI וטכנולוגיית ClearVoice Type-C",
   "category": "אוזניות Evolve3",
+  "audio_type": "STEREO",
   "consumer_price": 2649.0,
   "dealer_price": 1699.0,
   "stock": 0,
@@ -5930,6 +5941,20 @@ const JABRA_PRODUCTS = [
   "youtube": "https://www.youtube.com/watch?v=cQiS3tK771s"
  }
 ];
+// 24/11/26: Jabra מוחרג מ"חדשים בראש" — בכל תת-טאב מהדגם הקטן לגדול, ובאותו דגם מונו לפני סטריאו (JABRA_RANK)
+const JABRA_RANK = (function(){
+  var catOrder = {}, r = {};
+  JABRA_PRODUCTS.forEach(function(p){ if (p.category !== 'אביזרים' && !(p.category in catOrder)) catOrder[p.category] = Object.keys(catOrder).length; });
+  var keyed = JABRA_PRODUCTS.map(function(p, i){
+    var t = (p.code || '') + ' ' + (p.name || '');
+    var m = t.match(/(?:Speak2?|Evolve[23]?|Evo2|Engage)\s*(\d+)/i);
+    var mono = (p.audio_type === 'MONO' || /mono|מונו/i.test(t)) ? 0 : 1;
+    return { b: p.barcode, c: (p.category in catOrder) ? catOrder[p.category] : 999, n: m ? +m[1] : 9999, mono: mono, i: i };
+  });
+  keyed.sort(function(a, b){ return a.c - b.c || a.n - b.n || a.mono - b.mono || a.i - b.i; });
+  keyed.forEach(function(k, j){ r[k.b] = j; });
+  return r;
+})();
 var JABRA_RAW_IMAGES = {
   1: "img/8d6c7b5cb660.webp",
   2: "img/9f1e35934187.webp",
@@ -7719,6 +7744,7 @@ function renderCards() {
   else if (currentBrand === 'steelseries') products.sort((a,b) => (SS_RANK[a.barcode] ?? 9999) - (SS_RANK[b.barcode] ?? 9999));
   // Glorious מוחרג מ"חדשים בראש": סדר קבוע לפי קטגוריה ודגם (GLO_RANK)
   else if (currentBrand === 'glorious') products.sort((a,b) => (GLO_RANK[a.barcode] ?? 9999) - (GLO_RANK[b.barcode] ?? 9999));
+  else if (currentBrand === 'jabra') products.sort((a,b) => (JABRA_RANK[a.barcode] ?? 9999) - (JABRA_RANK[b.barcode] ?? 9999));
   // Beyerdynamic Lifestyle מוחרג מ"חדשים בראש": סדר קבוע (BEYERLIFE_RANK)
   else if (currentBrand === 'beyerdynamic_lifestyle') products.sort((a,b) => (BEYERLIFE_RANK[a.barcode] ?? 9999) - (BEYERLIFE_RANK[b.barcode] ?? 9999));
   // NewTec: אין מלאי (לפי פרויקט) — סדר המחירון (added_order יורד לפי סדר המערך)
