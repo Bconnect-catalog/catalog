@@ -25416,16 +25416,16 @@ function _agingViewFile(i) {
 }
 
 </script>
-<link rel="stylesheet" href="theme-light.css?v=175">
+<link rel="stylesheet" href="theme-light.css?v=176">
 <script>
 /* ══ שומר ניגודיות לעיצוב הבהיר (24/11/26) ══
    העיצוב הבהיר ממיר רקעים כהים מוטבעים לפי רשימה, וכל צבע שלא ברשימה השאיר טקסט כהה על כהה
    (או בהיר על בהיר). כאן נמדדת הניגודיות האמיתית בין הטקסט לרקע שמתחתיו, בכל מה שהקוד בונה,
-   ורק טקסט שנכשל (מתחת ל-4.5:1) מוכהה/מובהר — באותו גוון. רקעים ותמונות לא משתנים.
+   ורק טקסט שנכשל (מתחת ל-7:1; טקסט גדול 4.5:1) מוכהה/מובהר — באותו גוון. רקעים ותמונות לא משתנים.
    פועל רק כשקובץ theme-light.css מחובר. _lcLog = רשימת התיקונים (לבדיקה). */
 (function () {
   if (!document.querySelector('link[href*="theme-light"]')) return;
-  var MIN = 4.5, queue = [], timer = null;
+  var MIN = 7, queue = [], timer = null;
   window._lcLog = [];
   function parse(c) {
     var m = c && c.match(/rgba?\(([^)]+)\)/); if (!m) return null;
@@ -25476,12 +25476,15 @@ function _agingViewFile(i) {
     var bg = effBg(el); if (!bg) return;
     var fg = parse(cs.color); if (!fg) return;
     if (fg.a < 1) fg = blend(fg, bg);
-    var r0 = ratio(fg, bg); if (r0 >= MIN) return;
+    // יעד: 7:1 לטקסט רגיל, 4.5:1 לטקסט גדול (24px, או 18.7px מודגש) — לבקשת מרקו "יותר עומק"
+    var fs = parseFloat(cs.fontSize) || 14, big = fs >= 24 || (fs >= 18.6 && +cs.fontWeight >= 700);
+    var need = big ? 4.5 : MIN;
+    var r0 = ratio(fg, bg); if (r0 >= need) return;
     // כפתור צבעוני עם טקסט לבן (כתום BConnect וכו') — עיצוב מכוון, לא נוגעים
     var bh = toHsl(bg);
     if (lum(fg) > 0.8 && bh[1] > 0.5 && (r0 >= 3 || (bh[0] > 0.06 && bh[0] < 0.12 && r0 >= 2.2))) return;
     var hsl = toHsl(fg), dark = lum(bg) > 0.18, l = hsl[2], c = fg, s = Math.min(hsl[1], 0.85);
-    for (var i = 0; i < 25 && ratio(c, bg) < MIN; i++) { l = dark ? Math.max(0, l - 0.04) : Math.min(1, l + 0.04); c = fromHsl(hsl[0], s, l); }
+    for (var i = 0; i < 50 && ratio(c, bg) < need; i++) { l = dark ? Math.max(0, l - 0.02) : Math.min(1, l + 0.02); c = fromHsl(hsl[0], s, l); }
     var css = 'rgb(' + Math.round(c.r) + ',' + Math.round(c.g) + ',' + Math.round(c.b) + ')';
     if (el.getAttribute('data-lc') === css) return;   // כבר תוקן לאותו ערך — לא לחזור בלולאה
     el.setAttribute('data-lc', css);

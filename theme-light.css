@@ -5,7 +5,7 @@
   /* פלטה סופית: בסיס Modern Minimal (21st) + כחול עמוק שמתאים ללוגו + כתום BConnect לקנייה */
   --bg:#F8FAFC; --surface:#FFFFFF; --surface2:#F1F5F9; --card:#FFFFFF; --img-bg:#FFFFFF;
   --border:#E2E8F0; --input-border:#CBD5E1; --divider:#F1F5F9;
-  --text:#1E293B; --muted:#64748B; --placeholder:#94A3B8;
+  --text:#0F172A; --muted:#475569; --placeholder:#64748B;
   --accent:#F28C00; --accent2:#DB7A00;
   --bc-blue:#2563EB; --bc-blue-50:#EFF6FF; --primary-line:#BFDBFE; --bc-navy:#1E293B;
   --br:37,99,235; --radius-card:12px;
@@ -37,10 +37,10 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .filter-btn.active,.cat-btn.active,.cat-btn-all.active{background:var(--bc-blue)!important;border-color:var(--bc-blue)!important;color:#fff!important}
 .cat-btn-all.active::before,.cat-btn.active::before,.filter-btn.active::before,
 .cat-btn-all.active::after,.cat-btn.active::after,.filter-btn.active::after{display:none!important}
-.filter-btn.filter-sale{color:#B85C00!important;border-color:#F2B36B!important}
+.filter-btn.filter-sale{color:#854200!important;border-color:#F2B36B!important}
 .filter-btn.filter-sale.active{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
-.filter-btn.filter-recent{color:#1E7A45!important;border-color:#9ED3B4!important}
-.filter-btn.filter-restock{color:#1C5F99!important;border-color:#9CC7EC!important}
+.filter-btn.filter-recent{color:#186137!important;border-color:#9ED3B4!important}
+.filter-btn.filter-restock{color:#1A5A90!important;border-color:#9CC7EC!important}
 .cat-count{color:inherit!important;opacity:.7}
 .back-btn,.home-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
 
@@ -60,19 +60,19 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .cat-tag{background:var(--bc-blue-50)!important;border:1px solid var(--primary-line)!important;color:var(--bc-blue)!important}
 .cat-tag span{filter:none!important}
 .spec-btn{background:var(--surface2)!important;border:1px solid var(--input-border)!important;color:#3A4358!important}
-.spec-btn-active{background:#FFF4E5!important;border-color:#F2B36B!important;color:#9A4F00!important}
+.spec-btn-active{background:#FFF4E5!important;border-color:#F2B36B!important;color:#864500!important}
 .price-row-item{border-bottom:1px solid var(--divider)!important}
 .price-label{color:var(--muted)!important}
 .price-val,html.sunmode .price-val{color:var(--text)!important;text-shadow:none!important}
 .price-val[style*="color:#fff"]{color:var(--text)!important}
-.promo-price-row .price-label[style*="#f5c842"],.promo-price-row .price-val[style*="#f5c842"]{color:#A15C00!important}
-.promo-price-row .price-label[style*="#ff9800"],.promo-price-row .price-val[style*="#ff9800"]{color:#B45309!important}
-.card-name span[style*="#e74c3c"]{color:#C0392B!important}
+.promo-price-row .price-label[style*="#f5c842"],.promo-price-row .price-val[style*="#f5c842"]{color:#7D4800!important}
+.promo-price-row .price-label[style*="#ff9800"],.promo-price-row .price-val[style*="#ff9800"]{color:#8D4107!important}
+.card-name span[style*="#e74c3c"]{color:#9F2F24!important}
 .order-label,.item-note-label{color:var(--muted)!important}
 .qty-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important}
 .qty-btn:hover,.qty-btn:active{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
 .qty-input{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
-.qty-input.has-value{background:#FFF4E5!important;border-color:var(--accent)!important;color:#9A4F00!important;box-shadow:none!important}
+.qty-input.has-value{background:#FFF4E5!important;border-color:var(--accent)!important;color:#864500!important;box-shadow:none!important}
 .item-note-row{border-top:1px solid var(--divider)!important}
 .item-note-input{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important}
 .oos-note{color:var(--muted)!important}
@@ -114,8 +114,8 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .order-bar{background:rgba(255,255,255,.98)!important;border-top:1px solid var(--border)!important;
   box-shadow:0 -6px 24px rgba(15,23,42,.10)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 .bar-info{color:var(--muted)!important}
-.bar-info [style*="#90ee90"]{color:#15803D!important}
-.bar-total{color:#B45309!important}
+.bar-info [style*="#90ee90"]{color:#10612E!important}
+.bar-total{color:#8D4107!important}
 .bar-vat{color:var(--muted)!important}
 .modal-input,select.modal-input,.order-bar select{background:#fff!important;color:var(--text)!important;border:1px solid var(--input-border)!important;
   box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
@@ -144,22 +144,22 @@ html,body{background:var(--bg)!important;color:var(--text)}
 :is([style*="background:#1a1a2e" i],[style*="background: #1a1a2e" i],[style*="background-color:#1a1a2e" i],[style*="background: rgb(26, 26, 46)"],[style*="background-color: rgb(26, 26, 46)"],[style*="background:#0d0d1a" i],[style*="background: #0d0d1a" i],[style*="background-color:#0d0d1a" i],[style*="background: rgb(13, 13, 26)"],[style*="background-color: rgb(13, 13, 26)"],[style*="background:#141a2e" i],[style*="background: #141a2e" i],[style*="background-color:#141a2e" i],[style*="background: rgb(20, 26, 46)"],[style*="background-color: rgb(20, 26, 46)"],[style*="background:#1b2340" i],[style*="background: #1b2340" i],[style*="background-color:#1b2340" i],[style*="background: rgb(27, 35, 64)"],[style*="background-color: rgb(27, 35, 64)"],[style*="background:#2a2a3e" i],[style*="background: #2a2a3e" i],[style*="background-color:#2a2a3e" i],[style*="background: rgb(42, 42, 62)"],[style*="background-color: rgb(42, 42, 62)"],[style*="background:#0d1224" i],[style*="background: #0d1224" i],[style*="background-color:#0d1224" i],[style*="background: rgb(13, 18, 36)"],[style*="background-color: rgb(13, 18, 36)"],[style*="background:#26335f" i],[style*="background: #26335f" i],[style*="background-color:#26335f" i],[style*="background: rgb(38, 51, 95)"],[style*="background-color: rgb(38, 51, 95)"],[style*="background:#13243d" i],[style*="background: #13243d" i],[style*="background-color:#13243d" i],[style*="background: rgb(19, 36, 61)"],[style*="background-color: rgb(19, 36, 61)"],[style*="background:#12121f" i],[style*="background: #12121f" i],[style*="background-color:#12121f" i],[style*="background: rgb(18, 18, 31)"],[style*="background-color: rgb(18, 18, 31)"],[style*="background:#16161e" i],[style*="background: #16161e" i],[style*="background-color:#16161e" i],[style*="background: rgb(22, 22, 30)"],[style*="background-color: rgb(22, 22, 30)"],[style*="background:#1e1e2a" i],[style*="background: #1e1e2a" i],[style*="background-color:#1e1e2a" i],[style*="background: rgb(30, 30, 42)"],[style*="background-color: rgb(30, 30, 42)"],[style*="background:#0a0a14" i],[style*="background: #0a0a14" i],[style*="background-color:#0a0a14" i],[style*="background: rgb(10, 10, 20)"],[style*="background-color: rgb(10, 10, 20)"],[style*="background:#0e1828" i],[style*="background: #0e1828" i],[style*="background-color:#0e1828" i],[style*="background: rgb(14, 24, 40)"],[style*="background-color: rgb(14, 24, 40)"],[style*="background:#0d0d14" i],[style*="background: #0d0d14" i],[style*="background-color:#0d0d14" i],[style*="background: rgb(13, 13, 20)"],[style*="background-color: rgb(13, 13, 20)"],[style*="background:#1a1a1a" i],[style*="background: #1a1a1a" i],[style*="background-color:#1a1a1a" i],[style*="background: rgb(26, 26, 26)"],[style*="background-color: rgb(26, 26, 26)"],[style*="background:#151525" i],[style*="background: #151525" i],[style*="background-color:#151525" i],[style*="background: rgb(21, 21, 37)"],[style*="background-color: rgb(21, 21, 37)"],[style*="background:#1c1c2e" i],[style*="background: #1c1c2e" i],[style*="background-color:#1c1c2e" i],[style*="background: rgb(28, 28, 46)"],[style*="background-color: rgb(28, 28, 46)"],[style*="background:#222233" i],[style*="background: #222233" i],[style*="background-color:#222233" i],[style*="background: rgb(34, 34, 51)"],[style*="background-color: rgb(34, 34, 51)"],[style*="background:#202030" i],[style*="background: #202030" i],[style*="background-color:#202030" i],[style*="background: rgb(32, 32, 48)"],[style*="background-color: rgb(32, 32, 48)"],[style*="background:rgba(13,13,20"],[style*="background: rgba(13,13,20"],[style*="background:rgba(20,20,30"],[style*="background: rgba(20,20,30"],[style*="background:rgba(12,22,40"],[style*="background: rgba(12,22,40"],[style*="background:rgba(10,16,28"],[style*="background: rgba(10,16,28"],[style*="background:rgba(13, 13, 20"],[style*="background: rgba(13, 13, 20"],[style*="background:rgba(20, 20, 30"],[style*="background: rgba(20, 20, 30"],[style*="background:rgba(12, 22, 40"],[style*="background: rgba(12, 22, 40"],[style*="background:rgba(10, 16, 28"],[style*="background: rgba(10, 16, 28"]) :is([style*="color:#fff" i],[style*="color: rgb(255, 255, 255)"],[style*="color:#ffffff" i],[style*="color: rgb(255, 255, 255)"],[style*="color:#eee" i],[style*="color: rgb(238, 238, 238)"],[style*="color:#ddd" i],[style*="color: rgb(221, 221, 221)"],[style*="color:#ccc" i],[style*="color: rgb(204, 204, 204)"],[style*="color:#e0e0f0" i],[style*="color: rgb(224, 224, 240)"],[style*="color:#e8e8f0" i],[style*="color: rgb(232, 232, 240)"],[style*="color:#f0f0f8" i],[style*="color: rgb(240, 240, 248)"],[style*="color:#f0f0f0" i],[style*="color: rgb(240, 240, 240)"],[style*="color:#eaf6ff" i],[style*="color: rgb(234, 246, 255)"],[style*="color:#c7d0ea" i],[style*="color: rgb(199, 208, 234)"],[style*="color:#c8c8d8" i],[style*="color: rgb(200, 200, 216)"],[style*="color:#b0b0c8" i],[style*="color: rgb(176, 176, 200)"],[style*="color:#dfe9ff" i],[style*="color: rgb(223, 233, 255)"],[style*="color:#cfe0f5" i],[style*="color: rgb(207, 224, 245)"],[style*="color:#eaf4ff" i],[style*="color: rgb(234, 244, 255)"],[style*="color:#e0e0e0" i],[style*="color: rgb(224, 224, 224)"],[style*="color:#d0d0e0" i],[style*="color: rgb(208, 208, 224)"],[style*="color:#c0c0d0" i],[style*="color: rgb(192, 192, 208)"],[style*="color:#bbb" i],[style*="color: rgb(187, 187, 187)"],[style*="color:#aaa" i],[style*="color: rgb(170, 170, 170)"],[style*="color:#b4b4c2" i],[style*="color: rgb(180, 180, 194)"]):not([style*="background"]){color:var(--text)!important}
 :is([style*="background:#1a1a2e" i],[style*="background: #1a1a2e" i],[style*="background-color:#1a1a2e" i],[style*="background: rgb(26, 26, 46)"],[style*="background-color: rgb(26, 26, 46)"],[style*="background:#0d0d1a" i],[style*="background: #0d0d1a" i],[style*="background-color:#0d0d1a" i],[style*="background: rgb(13, 13, 26)"],[style*="background-color: rgb(13, 13, 26)"],[style*="background:#141a2e" i],[style*="background: #141a2e" i],[style*="background-color:#141a2e" i],[style*="background: rgb(20, 26, 46)"],[style*="background-color: rgb(20, 26, 46)"],[style*="background:#1b2340" i],[style*="background: #1b2340" i],[style*="background-color:#1b2340" i],[style*="background: rgb(27, 35, 64)"],[style*="background-color: rgb(27, 35, 64)"],[style*="background:#2a2a3e" i],[style*="background: #2a2a3e" i],[style*="background-color:#2a2a3e" i],[style*="background: rgb(42, 42, 62)"],[style*="background-color: rgb(42, 42, 62)"],[style*="background:#0d1224" i],[style*="background: #0d1224" i],[style*="background-color:#0d1224" i],[style*="background: rgb(13, 18, 36)"],[style*="background-color: rgb(13, 18, 36)"],[style*="background:#26335f" i],[style*="background: #26335f" i],[style*="background-color:#26335f" i],[style*="background: rgb(38, 51, 95)"],[style*="background-color: rgb(38, 51, 95)"],[style*="background:#13243d" i],[style*="background: #13243d" i],[style*="background-color:#13243d" i],[style*="background: rgb(19, 36, 61)"],[style*="background-color: rgb(19, 36, 61)"],[style*="background:#12121f" i],[style*="background: #12121f" i],[style*="background-color:#12121f" i],[style*="background: rgb(18, 18, 31)"],[style*="background-color: rgb(18, 18, 31)"],[style*="background:#16161e" i],[style*="background: #16161e" i],[style*="background-color:#16161e" i],[style*="background: rgb(22, 22, 30)"],[style*="background-color: rgb(22, 22, 30)"],[style*="background:#1e1e2a" i],[style*="background: #1e1e2a" i],[style*="background-color:#1e1e2a" i],[style*="background: rgb(30, 30, 42)"],[style*="background-color: rgb(30, 30, 42)"],[style*="background:#0a0a14" i],[style*="background: #0a0a14" i],[style*="background-color:#0a0a14" i],[style*="background: rgb(10, 10, 20)"],[style*="background-color: rgb(10, 10, 20)"],[style*="background:#0e1828" i],[style*="background: #0e1828" i],[style*="background-color:#0e1828" i],[style*="background: rgb(14, 24, 40)"],[style*="background-color: rgb(14, 24, 40)"],[style*="background:#0d0d14" i],[style*="background: #0d0d14" i],[style*="background-color:#0d0d14" i],[style*="background: rgb(13, 13, 20)"],[style*="background-color: rgb(13, 13, 20)"],[style*="background:#1a1a1a" i],[style*="background: #1a1a1a" i],[style*="background-color:#1a1a1a" i],[style*="background: rgb(26, 26, 26)"],[style*="background-color: rgb(26, 26, 26)"],[style*="background:#151525" i],[style*="background: #151525" i],[style*="background-color:#151525" i],[style*="background: rgb(21, 21, 37)"],[style*="background-color: rgb(21, 21, 37)"],[style*="background:#1c1c2e" i],[style*="background: #1c1c2e" i],[style*="background-color:#1c1c2e" i],[style*="background: rgb(28, 28, 46)"],[style*="background-color: rgb(28, 28, 46)"],[style*="background:#222233" i],[style*="background: #222233" i],[style*="background-color:#222233" i],[style*="background: rgb(34, 34, 51)"],[style*="background-color: rgb(34, 34, 51)"],[style*="background:#202030" i],[style*="background: #202030" i],[style*="background-color:#202030" i],[style*="background: rgb(32, 32, 48)"],[style*="background-color: rgb(32, 32, 48)"],[style*="background:rgba(13,13,20"],[style*="background: rgba(13,13,20"],[style*="background:rgba(20,20,30"],[style*="background: rgba(20,20,30"],[style*="background:rgba(12,22,40"],[style*="background: rgba(12,22,40"],[style*="background:rgba(10,16,28"],[style*="background: rgba(10,16,28"],[style*="background:rgba(13, 13, 20"],[style*="background: rgba(13, 13, 20"],[style*="background:rgba(20, 20, 30"],[style*="background: rgba(20, 20, 30"],[style*="background:rgba(12, 22, 40"],[style*="background: rgba(12, 22, 40"],[style*="background:rgba(10, 16, 28"],[style*="background: rgba(10, 16, 28"]) :is(input,textarea,select):not([type=checkbox]):not([type=radio]){background:#fff!important;color:var(--text)!important;border:1px solid var(--input-border)!important}
 :is([style*="background:#1a1a2e" i],[style*="background: #1a1a2e" i],[style*="background-color:#1a1a2e" i],[style*="background: rgb(26, 26, 46)"],[style*="background-color: rgb(26, 26, 46)"],[style*="background:#0d0d1a" i],[style*="background: #0d0d1a" i],[style*="background-color:#0d0d1a" i],[style*="background: rgb(13, 13, 26)"],[style*="background-color: rgb(13, 13, 26)"],[style*="background:#141a2e" i],[style*="background: #141a2e" i],[style*="background-color:#141a2e" i],[style*="background: rgb(20, 26, 46)"],[style*="background-color: rgb(20, 26, 46)"],[style*="background:#1b2340" i],[style*="background: #1b2340" i],[style*="background-color:#1b2340" i],[style*="background: rgb(27, 35, 64)"],[style*="background-color: rgb(27, 35, 64)"],[style*="background:#2a2a3e" i],[style*="background: #2a2a3e" i],[style*="background-color:#2a2a3e" i],[style*="background: rgb(42, 42, 62)"],[style*="background-color: rgb(42, 42, 62)"],[style*="background:#0d1224" i],[style*="background: #0d1224" i],[style*="background-color:#0d1224" i],[style*="background: rgb(13, 18, 36)"],[style*="background-color: rgb(13, 18, 36)"],[style*="background:#26335f" i],[style*="background: #26335f" i],[style*="background-color:#26335f" i],[style*="background: rgb(38, 51, 95)"],[style*="background-color: rgb(38, 51, 95)"],[style*="background:#13243d" i],[style*="background: #13243d" i],[style*="background-color:#13243d" i],[style*="background: rgb(19, 36, 61)"],[style*="background-color: rgb(19, 36, 61)"],[style*="background:#12121f" i],[style*="background: #12121f" i],[style*="background-color:#12121f" i],[style*="background: rgb(18, 18, 31)"],[style*="background-color: rgb(18, 18, 31)"],[style*="background:#16161e" i],[style*="background: #16161e" i],[style*="background-color:#16161e" i],[style*="background: rgb(22, 22, 30)"],[style*="background-color: rgb(22, 22, 30)"],[style*="background:#1e1e2a" i],[style*="background: #1e1e2a" i],[style*="background-color:#1e1e2a" i],[style*="background: rgb(30, 30, 42)"],[style*="background-color: rgb(30, 30, 42)"],[style*="background:#0a0a14" i],[style*="background: #0a0a14" i],[style*="background-color:#0a0a14" i],[style*="background: rgb(10, 10, 20)"],[style*="background-color: rgb(10, 10, 20)"],[style*="background:#0e1828" i],[style*="background: #0e1828" i],[style*="background-color:#0e1828" i],[style*="background: rgb(14, 24, 40)"],[style*="background-color: rgb(14, 24, 40)"],[style*="background:#0d0d14" i],[style*="background: #0d0d14" i],[style*="background-color:#0d0d14" i],[style*="background: rgb(13, 13, 20)"],[style*="background-color: rgb(13, 13, 20)"],[style*="background:#1a1a1a" i],[style*="background: #1a1a1a" i],[style*="background-color:#1a1a1a" i],[style*="background: rgb(26, 26, 26)"],[style*="background-color: rgb(26, 26, 26)"],[style*="background:#151525" i],[style*="background: #151525" i],[style*="background-color:#151525" i],[style*="background: rgb(21, 21, 37)"],[style*="background-color: rgb(21, 21, 37)"],[style*="background:#1c1c2e" i],[style*="background: #1c1c2e" i],[style*="background-color:#1c1c2e" i],[style*="background: rgb(28, 28, 46)"],[style*="background-color: rgb(28, 28, 46)"],[style*="background:#222233" i],[style*="background: #222233" i],[style*="background-color:#222233" i],[style*="background: rgb(34, 34, 51)"],[style*="background-color: rgb(34, 34, 51)"],[style*="background:#202030" i],[style*="background: #202030" i],[style*="background-color:#202030" i],[style*="background: rgb(32, 32, 48)"],[style*="background-color: rgb(32, 32, 48)"],[style*="background:rgba(13,13,20"],[style*="background: rgba(13,13,20"],[style*="background:rgba(20,20,30"],[style*="background: rgba(20,20,30"],[style*="background:rgba(12,22,40"],[style*="background: rgba(12,22,40"],[style*="background:rgba(10,16,28"],[style*="background: rgba(10,16,28"],[style*="background:rgba(13, 13, 20"],[style*="background: rgba(13, 13, 20"],[style*="background:rgba(20, 20, 30"],[style*="background: rgba(20, 20, 30"],[style*="background:rgba(12, 22, 40"],[style*="background: rgba(12, 22, 40"],[style*="background:rgba(10, 16, 28"],[style*="background: rgba(10, 16, 28"]) :is(input,textarea)::placeholder{color:var(--placeholder)!important}
-:is([style*="color:#90ee90" i],[style*="color: rgb(144, 238, 144)"]):not([style*="background:#90ee90" i]){color:#15803D!important}
+:is([style*="color:#90ee90" i],[style*="color: rgb(144, 238, 144)"]):not([style*="background:#90ee90" i]){color:#10612E!important}
 :is([style*="color:#a87fff" i],[style*="color: rgb(168, 127, 255)"]):not([style*="background:#a87fff" i]){color:#6D28D9!important}
-:is([style*="color:#64b5f6" i],[style*="color: rgb(100, 181, 246)"]):not([style*="background:#64b5f6" i]){color:#1D4ED8!important}
-:is([style*="color:#f5c842" i],[style*="color: rgb(245, 200, 66)"]):not([style*="background:#f5c842" i]){color:#A16207!important}
-:is([style*="color:#ffaa66" i],[style*="color: rgb(255, 170, 102)"]):not([style*="background:#ffaa66" i]){color:#C2410C!important}
-:is([style*="color:#ff8a8a" i],[style*="color: rgb(255, 138, 138)"]):not([style*="background:#ff8a8a" i]){color:#DC2626!important}
-:is([style*="color:#5fd38d" i],[style*="color: rgb(95, 211, 141)"]):not([style*="background:#5fd38d" i]){color:#15803D!important}
-:is([style*="color:#00c850" i],[style*="color: rgb(0, 200, 80)"]):not([style*="background:#00c850" i]){color:#15803D!important}
-:is([style*="color:#2dd4d6" i],[style*="color: rgb(45, 212, 214)"]):not([style*="background:#2dd4d6" i]){color:#0E7490!important}
+:is([style*="color:#64b5f6" i],[style*="color: rgb(100, 181, 246)"]):not([style*="background:#64b5f6" i]){color:#1B49CB!important}
+:is([style*="color:#f5c842" i],[style*="color: rgb(245, 200, 66)"]):not([style*="background:#f5c842" i]){color:#7A4A05!important}
+:is([style*="color:#ffaa66" i],[style*="color: rgb(255, 170, 102)"]):not([style*="background:#ffaa66" i]){color:#9C340A!important}
+:is([style*="color:#ff8a8a" i],[style*="color: rgb(255, 138, 138)"]):not([style*="background:#ff8a8a" i]){color:#A91B1B!important}
+:is([style*="color:#5fd38d" i],[style*="color: rgb(95, 211, 141)"]):not([style*="background:#5fd38d" i]){color:#10612E!important}
+:is([style*="color:#00c850" i],[style*="color: rgb(0, 200, 80)"]):not([style*="background:#00c850" i]){color:#10612E!important}
+:is([style*="color:#2dd4d6" i],[style*="color: rgb(45, 212, 214)"]):not([style*="background:#2dd4d6" i]){color:#0B5E74!important}
 :is([style*="color:#c9b3ff" i],[style*="color: rgb(201, 179, 255)"]):not([style*="background:#c9b3ff" i]){color:#6D28D9!important}
-:is([style*="color:#8fe0a8" i],[style*="color: rgb(143, 224, 168)"]):not([style*="background:#8fe0a8" i]){color:#15803D!important}
-:is([style*="color:#8fd0ff" i],[style*="color: rgb(143, 208, 255)"]):not([style*="background:#8fd0ff" i]){color:#1D4ED8!important}
-:is([style*="color:#ff8a65" i],[style*="color: rgb(255, 138, 101)"]):not([style*="background:#ff8a65" i]){color:#C2410C!important}
-:is([style*="color:#f1c40f" i],[style*="color: rgb(241, 196, 15)"]):not([style*="background:#f1c40f" i]){color:#A16207!important}
-:is([style*="color:#ffcc99" i],[style*="color: rgb(255, 204, 153)"]):not([style*="background:#ffcc99" i]){color:#C2410C!important}
-:is([style*="color:#00c8ff" i],[style*="color: rgb(0, 200, 255)"]):not([style*="background:#00c8ff" i]){color:#0369A1!important}
+:is([style*="color:#8fe0a8" i],[style*="color: rgb(143, 224, 168)"]):not([style*="background:#8fe0a8" i]){color:#10612E!important}
+:is([style*="color:#8fd0ff" i],[style*="color: rgb(143, 208, 255)"]):not([style*="background:#8fd0ff" i]){color:#1B49CB!important}
+:is([style*="color:#ff8a65" i],[style*="color: rgb(255, 138, 101)"]):not([style*="background:#ff8a65" i]){color:#9C340A!important}
+:is([style*="color:#f1c40f" i],[style*="color: rgb(241, 196, 15)"]):not([style*="background:#f1c40f" i]){color:#7A4A05!important}
+:is([style*="color:#ffcc99" i],[style*="color: rgb(255, 204, 153)"]):not([style*="background:#ffcc99" i]){color:#9C340A!important}
+:is([style*="color:#00c8ff" i],[style*="color: rgb(0, 200, 255)"]):not([style*="background:#00c8ff" i]){color:#035988!important}
 :is([style*="background:#123323" i],[style*="background: #123323" i],[style*="background-color:#123323" i],[style*="background: rgb(18, 51, 35)"]){background:#ECFDF3!important}
 :is([style*="background:#3a2a00" i],[style*="background: #3a2a00" i],[style*="background-color:#3a2a00" i],[style*="background: rgb(58, 42, 0)"]){background:#FEF9C3!important}
 :is([style*="background:#4a1010" i],[style*="background: #4a1010" i],[style*="background-color:#4a1010" i],[style*="background: rgb(74, 16, 16)"]){background:#FEE2E2!important}
@@ -174,8 +174,8 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .global-result-item:hover{background:var(--bc-blue-50)!important}
 .gr-name,html.sunmode .gr-name{color:var(--text)!important;text-shadow:none!important}
 .gr-sub{color:var(--muted)!important}
-.gr-price{color:#15803D!important;text-shadow:none!important}
-.gr-stock{color:#15803D!important}
+.gr-price{color:#10612E!important;text-shadow:none!important}
+.gr-stock{color:#10612E!important}
 .gr-cat-badge{background:var(--bc-blue-50)!important;color:var(--bc-blue)!important;border-color:var(--primary-line)!important}
 .gr-img,.gr-brand-logo{background:#fff!important;border:1px solid var(--border)!important}
 
@@ -206,7 +206,7 @@ body:has(#orderBar.visible) #updateDateBadge{display:none!important}
 .filter-btn.filter-btn-new-blink{border-color:var(--bc-blue)!important;color:var(--bc-blue)!important;
   outline:2px solid #2563EB;outline-offset:1px;animation:ltBlinkBlue 1.2s ease-in-out infinite}
 /* כפתור תיאור/מפרט כשמילת החיפוש נמצאת בתוכו */
-.spec-btn.spec-btn-pulse{background:#FFF4E5!important;border-color:var(--accent)!important;color:#9A4F00!important;
+.spec-btn.spec-btn-pulse{background:#FFF4E5!important;border-color:var(--accent)!important;color:#864500!important;
   outline:2px solid #F28C00;outline-offset:1px;animation:ltBlinkOrange 1.2s ease-in-out infinite}
 /* "אשר ושלח הזמנה" — מצב אישור ירוק */
 #sendOrderBtn.send-armed{background:#16A34A!important;border-color:#16A34A!important;color:#fff!important;
@@ -226,106 +226,110 @@ body:has(#orderBar.visible) #updateDateBadge{display:none!important}
 [style*="border-top:1px solid #26304d" i],[style*="border-top: 1px solid rgb(38, 48, 77)"]{border-top-color:var(--border)!important}
 
 /* טקסט צבעוני בהיר מוטבע (כתום/ירוק/תכלת/אפור) — מוכהה באותו גוון ל-4.5:1 לפחות על לבן */
-:is([style*="color:#0090bb" i],[style*="color: rgb(0, 144, 187)"]):not([style*="background:#0090bb" i]){color:#0C7A9A!important}
-:is([style*="color:#00ff88" i],[style*="color: rgb(0, 255, 136)"]):not([style*="background:#00ff88" i]){color:#0B844B!important}
-:is([style*="color:#1a9a5c" i],[style*="color: rgb(26, 154, 92)"]):not([style*="background:#1a9a5c" i]){color:#16804C!important}
-:is([style*="color:#21a366" i],[style*="color: rgb(33, 163, 102)"]):not([style*="background:#21a366" i]){color:#1A8151!important}
-:is([style*="color:#27ae60" i],[style*="color: rgb(39, 174, 96)"]):not([style*="background:#27ae60" i]){color:#1E8449!important}
-:is([style*="color:#2ec58a" i],[style*="color: rgb(46, 197, 138)"]):not([style*="background:#2ec58a" i]){color:#1F835C!important}
-:is([style*="color:#2ed573" i],[style*="color: rgb(46, 213, 115)"]):not([style*="background:#2ed573" i]){color:#1A8345!important}
-:is([style*="color:#4a90d9" i],[style*="color: rgb(74, 144, 217)"]):not([style*="background:#4a90d9" i]){color:#2A76C6!important}
-:is([style*="color:#4caf50" i],[style*="color: rgb(76, 175, 80)"]):not([style*="background:#4caf50" i]){color:#39843C!important}
-:is([style*="color:#5cffa8" i],[style*="color: rgb(92, 255, 168)"]):not([style*="background:#5cffa8" i]){color:#0B8443!important}
-:is([style*="color:#5dade2" i],[style*="color: rgb(93, 173, 226)"]):not([style*="background:#5dade2" i]){color:#1F76AF!important}
-:is([style*="color:#6baeff" i],[style*="color: rgb(107, 174, 255)"]):not([style*="background:#6baeff" i]){color:#126EDE!important}
-:is([style*="color:#7a8299" i],[style*="color: rgb(122, 130, 153)"]):not([style*="background:#7a8299" i]){color:#6A728A!important}
-:is([style*="color:#7d93b0" i],[style*="color: rgb(125, 147, 176)"]):not([style*="background:#7d93b0" i]){color:#5B7495!important}
-:is([style*="color:#7ee69c" i],[style*="color: rgb(126, 230, 156)"]):not([style*="background:#7ee69c" i]){color:#197F36!important}
-:is([style*="color:#7f8bb0" i],[style*="color: rgb(127, 139, 176)"]):not([style*="background:#7f8bb0" i]){color:#606F9C!important}
-:is([style*="color:#7fb2ff" i],[style*="color: rgb(127, 178, 255)"]):not([style*="background:#7fb2ff" i]){color:#176CEC!important}
-:is([style*="color:#7fd694" i],[style*="color: rgb(127, 214, 148)"]):not([style*="background:#7fd694" i]){color:#297F3D!important}
-:is([style*="color:#82b1ff" i],[style*="color: rgb(130, 177, 255)"]):not([style*="background:#82b1ff" i]){color:#1A69EC!important}
-:is([style*="color:#86efac" i],[style*="color: rgb(134, 239, 172)"]):not([style*="background:#86efac" i]){color:#11833B!important}
-:is([style*="color:#8792b3" i],[style*="color: rgb(135, 146, 179)"]):not([style*="background:#8792b3" i]){color:#62709B!important}
-:is([style*="color:#888" i],[style*="color: rgb(136, 136, 136)"]):not([style*="background:#888" i]){color:#747474!important}
-:is([style*="color:#8888aa" i],[style*="color: rgb(136, 136, 170)"]):not([style*="background:#8888aa" i]){color:#707099!important}
-:is([style*="color:#8891a5" i],[style*="color: rgb(136, 145, 165)"]):not([style*="background:#8891a5" i]){color:#677289!important}
-:is([style*="color:#88aaff" i],[style*="color: rgb(136, 170, 255)"]):not([style*="background:#88aaff" i]){color:#3368EE!important}
-:is([style*="color:#8a8a99" i],[style*="color: rgb(138, 138, 153)"]):not([style*="background:#8a8a99" i]){color:#707080!important}
-:is([style*="color:#8a93a8" i],[style*="color: rgb(138, 147, 168)"]):not([style*="background:#8a93a8" i]){color:#68738C!important}
-:is([style*="color:#8ef0bb" i],[style*="color: rgb(142, 240, 187)"]):not([style*="background:#8ef0bb" i]){color:#118245!important}
-:is([style*="color:#8f8fb0" i],[style*="color: rgb(143, 143, 176)"]):not([style*="background:#8f8fb0" i]){color:#71719B!important}
-:is([style*="color:#8fb0e0" i],[style*="color: rgb(143, 176, 224)"]):not([style*="background:#8fb0e0" i]){color:#3772C8!important}
-:is([style*="color:#8fbfa6" i],[style*="color: rgb(143, 191, 166)"]):not([style*="background:#8fbfa6" i]){color:#498064!important}
-:is([style*="color:#9aa6c8" i],[style*="color: rgb(154, 166, 200)"]):not([style*="background:#9aa6c8" i]){color:#5F72A8!important}
-:is([style*="color:#9db4d0" i],[style*="color: rgb(157, 180, 208)"]):not([style*="background:#9db4d0" i]){color:#4F75A4!important}
-:is([style*="color:#9fb0dd" i],[style*="color: rgb(159, 176, 221)"]):not([style*="background:#9fb0dd" i]){color:#5472C2!important}
-:is([style*="color:#9fb4ea" i],[style*="color: rgb(159, 180, 234)"]):not([style*="background:#9fb4ea" i]){color:#436CD6!important}
-:is([style*="color:#9fc3f0" i],[style*="color: rgb(159, 195, 240)"]):not([style*="background:#9fc3f0" i]){color:#2171D5!important}
-:is([style*="color:#9fd0ff" i],[style*="color: rgb(159, 208, 255)"]):not([style*="background:#9fd0ff" i]){color:#1175D5!important}
-:is([style*="color:#9fe8c4" i],[style*="color: rgb(159, 232, 196)"]):not([style*="background:#9fe8c4" i]){color:#1E7E4F!important}
-:is([style*="color:#a0a0b8" i],[style*="color: rgb(160, 160, 184)"]):not([style*="background:#a0a0b8" i]){color:#717195!important}
-:is([style*="color:#a0a0c0" i],[style*="color: rgb(160, 160, 192)"]):not([style*="background:#a0a0c0" i]){color:#6F6F9F!important}
-:is([style*="color:#a8bcd6" i],[style*="color: rgb(168, 188, 214)"]):not([style*="background:#a8bcd6" i]){color:#5077AA!important}
-:is([style*="color:#a9a9c8" i],[style*="color: rgb(169, 169, 200)"]):not([style*="background:#a9a9c8" i]){color:#6B6BA0!important}
-:is([style*="color:#aab3c5" i],[style*="color: rgb(170, 179, 197)"]):not([style*="background:#aab3c5" i]){color:#637391!important}
-:is([style*="color:#b0b0d0" i],[style*="color: rgb(176, 176, 208)"]):not([style*="background:#b0b0d0" i]){color:#6A6AA6!important}
-:is([style*="color:#b8861b" i],[style*="color: rgb(184, 134, 27)"]):not([style*="background:#b8861b" i]){color:#946C16!important}
-:is([style*="color:#b89cff" i],[style*="color: rgb(184, 156, 255)"]):not([style*="background:#b89cff" i]){color:#7C4FF1!important}
-:is([style*="color:#c4b5fd" i],[style*="color: rgb(196, 181, 253)"]):not([style*="background:#c4b5fd" i]){color:#7251F1!important}
-:is([style*="color:#c7c7e0" i],[style*="color: rgb(199, 199, 224)"]):not([style*="background:#c7c7e0" i]){color:#6B6BAD!important}
-:is([style*="color:#c8860a" i],[style*="color: rgb(200, 134, 10)"]):not([style*="background:#c8860a" i]){color:#9D6B0D!important}
-:is([style*="color:#c8c8e8" i],[style*="color: rgb(200, 200, 232)"]):not([style*="background:#c8c8e8" i]){color:#6A6AC1!important}
-:is([style*="color:#c8e0ff" i],[style*="color: rgb(200, 224, 255)"]):not([style*="background:#c8e0ff" i]){color:#1370E8!important}
-:is([style*="color:#cfe2ff" i],[style*="color: rgb(207, 226, 255)"]):not([style*="background:#cfe2ff" i]){color:#166BEC!important}
-:is([style*="color:#cfe3ff" i],[style*="color: rgb(207, 227, 255)"]):not([style*="background:#cfe3ff" i]){color:#166FEC!important}
-:is([style*="color:#e0e0ff" i],[style*="color: rgb(224, 224, 255)"]):not([style*="background:#e0e0ff" i]){color:#5E5EF2!important}
-:is([style*="color:#e53" i],[style*="color: rgb(238, 85, 51)"]):not([style*="background:#e53" i]){color:#D23512!important}
-:is([style*="color:#e57373" i],[style*="color: rgb(229, 115, 115)"]):not([style*="background:#e57373" i]){color:#D82E2E!important}
-:is([style*="color:#e65100" i],[style*="color: rgb(230, 81, 0)"]):not([style*="background:#e65100" i]){color:#C24E10!important}
-:is([style*="color:#e6dcff" i],[style*="color: rgb(230, 220, 255)"]):not([style*="background:#e6dcff" i]){color:#7F51F1!important}
-:is([style*="color:#e74c3c" i],[style*="color: rgb(231, 76, 60)"]):not([style*="background:#e74c3c" i]){color:#DF2E1B!important}
-:is([style*="color:#e7a0ad" i],[style*="color: rgb(231, 160, 173)"]):not([style*="background:#e7a0ad" i]){color:#CE3E59!important}
-:is([style*="color:#f06262" i],[style*="color: rgb(240, 98, 98)"]):not([style*="background:#f06262" i]){color:#E11515!important}
-:is([style*="color:#f39c12" i],[style*="color: rgb(243, 156, 18)"]):not([style*="background:#f39c12" i]){color:#9D650D!important}
-:is([style*="color:#fbbf24" i],[style*="color: rgb(251, 191, 36)"]):not([style*="background:#fbbf24" i]){color:#8F6A0C!important}
-:is([style*="color:#ff3b2f" i],[style*="color: rgb(255, 59, 47)"]):not([style*="background:#ff3b2f" i]){color:#DF1E12!important}
-:is([style*="color:#ff6666" i],[style*="color: rgb(255, 102, 102)"]):not([style*="background:#ff6666" i]){color:#E21212!important}
-:is([style*="color:#ff6b00" i],[style*="color: rgb(255, 107, 0)"]):not([style*="background:#ff6b00" i]){color:#B3540F!important}
-:is([style*="color:#ff6b5e" i],[style*="color: rgb(255, 107, 94)"]):not([style*="background:#ff6b5e" i]){color:#E42313!important}
-:is([style*="color:#ff6b6b" i],[style*="color: rgb(255, 107, 107)"]):not([style*="background:#ff6b6b" i]){color:#E71313!important}
-:is([style*="color:#ff8a80" i],[style*="color: rgb(255, 138, 128)"]):not([style*="background:#ff8a80" i]){color:#DE2212!important}
-:is([style*="color:#ff8c00" i],[style*="color: rgb(255, 140, 0)"]):not([style*="background:#ff8c00" i]){color:#AA630E!important}
-:is([style*="color:#ff8c33" i],[style*="color: rgb(255, 140, 51)"]):not([style*="background:#ff8c33" i]){color:#B3560F!important}
-:is([style*="color:#ff8fa3" i],[style*="color: rgb(255, 143, 163)"]):not([style*="background:#ff8fa3" i]){color:#E31238!important}
-:is([style*="color:#ff9040" i],[style*="color: rgb(255, 144, 64)"]):not([style*="background:#ff9040" i]){color:#B6550F!important}
-:is([style*="color:#ff9800" i],[style*="color: rgb(255, 152, 0)"]):not([style*="background:#ff9800" i]){color:#A0650D!important}
-:is([style*="color:#ffb300" i],[style*="color: rgb(255, 179, 0)"]):not([style*="background:#ffb300" i]){color:#976E0C!important}
-:is([style*="color:#ffb36b" i],[style*="color: rgb(255, 179, 107)"]):not([style*="background:#ffb36b" i]){color:#AE5C0E!important}
-:is([style*="color:#ffb4b4" i],[style*="color: rgb(255, 180, 180)"]):not([style*="background:#ffb4b4" i]){color:#DF1212!important}
-:is([style*="color:#ffb74d" i],[style*="color: rgb(255, 183, 77)"]):not([style*="background:#ffb74d" i]){color:#9C620D!important}
-:is([style*="color:#ffc107" i],[style*="color: rgb(255, 193, 7)"]):not([style*="background:#ffc107" i]){color:#8B6B0B!important}
-:is([style*="color:#ffc9c4" i],[style*="color: rgb(255, 201, 196)"]):not([style*="background:#ffc9c4" i]){color:#E42413!important}
-:is([style*="color:#ffcccc" i],[style*="color: rgb(255, 204, 204)"]):not([style*="background:#ffcccc" i]){color:#E21212!important}
-:is([style*="color:#ffd0a0" i],[style*="color: rgb(255, 208, 160)"]):not([style*="background:#ffd0a0" i]){color:#B0600E!important}
-:is([style*="color:#ffd27a" i],[style*="color: rgb(255, 210, 122)"]):not([style*="background:#ffd27a" i]){color:#97680C!important}
-:is([style*="color:#ffd700" i],[style*="color: rgb(255, 215, 0)"]):not([style*="background:#ffd700" i]){color:#84710B!important}
-:is([style*="color:#ffd99a" i],[style*="color: rgb(255, 217, 154)"]):not([style*="background:#ffd99a" i]){color:#98630C!important}
-:is([style*="color:#ffd9a8" i],[style*="color: rgb(255, 217, 168)"]):not([style*="background:#ffd9a8" i]){color:#A5630D!important}
-:is([style*="color:#ffd9b0" i],[style*="color: rgb(255, 217, 176)"]):not([style*="background:#ffd9b0" i]){color:#AC600E!important}
+:is([style*="color:#0090bb" i],[style*="color: rgb(0, 144, 187)"]):not([style*="background:#0090bb" i]){color:#095C74!important}
+:is([style*="color:#00ff88" i],[style*="color: rgb(0, 255, 136)"]):not([style*="background:#00ff88" i]){color:#086338!important}
+:is([style*="color:#1a9a5c" i],[style*="color: rgb(26, 154, 92)"]):not([style*="background:#1a9a5c" i]){color:#11623A!important}
+:is([style*="color:#21a366" i],[style*="color: rgb(33, 163, 102)"]):not([style*="background:#21a366" i]){color:#14633E!important}
+:is([style*="color:#27ae60" i],[style*="color: rgb(39, 174, 96)"]):not([style*="background:#27ae60" i]){color:#166337!important}
+:is([style*="color:#2ec58a" i],[style*="color: rgb(46, 197, 138)"]):not([style*="background:#2ec58a" i]){color:#176245!important}
+:is([style*="color:#2ed573" i],[style*="color: rgb(46, 213, 115)"]):not([style*="background:#2ed573" i]){color:#136133!important}
+:is([style*="color:#4a90d9" i],[style*="color: rgb(74, 144, 217)"]):not([style*="background:#4a90d9" i]){color:#1F5894!important}
+:is([style*="color:#4caf50" i],[style*="color: rgb(76, 175, 80)"]):not([style*="background:#4caf50" i]){color:#2A602C!important}
+:is([style*="color:#5cffa8" i],[style*="color: rgb(92, 255, 168)"]):not([style*="background:#5cffa8" i]){color:#086332!important}
+:is([style*="color:#5dade2" i],[style*="color: rgb(93, 173, 226)"]):not([style*="background:#5dade2" i]){color:#175984!important}
+:is([style*="color:#6baeff" i],[style*="color: rgb(107, 174, 255)"]):not([style*="background:#6baeff" i]){color:#0E54AA!important}
+:is([style*="color:#7a8299" i],[style*="color: rgb(122, 130, 153)"]):not([style*="background:#7a8299" i]){color:#4F5567!important}
+:is([style*="color:#7d93b0" i],[style*="color: rgb(125, 147, 176)"]):not([style*="background:#7d93b0" i]){color:#44566F!important}
+:is([style*="color:#7ee69c" i],[style*="color: rgb(126, 230, 156)"]):not([style*="background:#7ee69c" i]){color:#136129!important}
+:is([style*="color:#7f8bb0" i],[style*="color: rgb(127, 139, 176)"]):not([style*="background:#7f8bb0" i]){color:#4B5679!important}
+:is([style*="color:#7fb2ff" i],[style*="color: rgb(127, 178, 255)"]):not([style*="background:#7fb2ff" i]){color:#0F52B7!important}
+:is([style*="color:#7fd694" i],[style*="color: rgb(127, 214, 148)"]):not([style*="background:#7fd694" i]){color:#1F602E!important}
+:is([style*="color:#82b1ff" i],[style*="color: rgb(130, 177, 255)"]):not([style*="background:#82b1ff" i]){color:#0F4FB9!important}
+:is([style*="color:#86efac" i],[style*="color: rgb(134, 239, 172)"]):not([style*="background:#86efac" i]){color:#0D632D!important}
+:is([style*="color:#8792b3" i],[style*="color: rgb(135, 146, 179)"]):not([style*="background:#8792b3" i]){color:#4A5576!important}
+:is([style*="color:#888" i],[style*="color: rgb(136, 136, 136)"]):not([style*="background:#888" i]){color:#555555!important}
+:is([style*="color:#8888aa" i],[style*="color: rgb(136, 136, 170)"]):not([style*="background:#8888aa" i]){color:#535374!important}
+:is([style*="color:#8891a5" i],[style*="color: rgb(136, 145, 165)"]):not([style*="background:#8891a5" i]){color:#4F5769!important}
+:is([style*="color:#88aaff" i],[style*="color: rgb(136, 170, 255)"]):not([style*="background:#88aaff" i]){color:#1248D2!important}
+:is([style*="color:#8a8a99" i],[style*="color: rgb(138, 138, 153)"]):not([style*="background:#8a8a99" i]){color:#565662!important}
+:is([style*="color:#8a93a8" i],[style*="color: rgb(138, 147, 168)"]):not([style*="background:#8a93a8" i]){color:#4E5669!important}
+:is([style*="color:#8ef0bb" i],[style*="color: rgb(142, 240, 187)"]):not([style*="background:#8ef0bb" i]){color:#0D6234!important}
+:is([style*="color:#8f8fb0" i],[style*="color: rgb(143, 143, 176)"]):not([style*="background:#8f8fb0" i]){color:#535376!important}
+:is([style*="color:#8fb0e0" i],[style*="color: rgb(143, 176, 224)"]):not([style*="background:#8fb0e0" i]){color:#2A5798!important}
+:is([style*="color:#8fbfa6" i],[style*="color: rgb(143, 191, 166)"]):not([style*="background:#8fbfa6" i]){color:#355C48!important}
+:is([style*="color:#9aa6c8" i],[style*="color: rgb(154, 166, 200)"]):not([style*="background:#9aa6c8" i]){color:#45547F!important}
+:is([style*="color:#9db4d0" i],[style*="color: rgb(157, 180, 208)"]):not([style*="background:#9db4d0" i]){color:#3B587B!important}
+:is([style*="color:#9fb0dd" i],[style*="color: rgb(159, 176, 221)"]):not([style*="background:#9fb0dd" i]){color:#38539C!important}
+:is([style*="color:#9fb4ea" i],[style*="color: rgb(159, 180, 234)"]):not([style*="background:#9fb4ea" i]){color:#274FB4!important}
+:is([style*="color:#9fc3f0" i],[style*="color: rgb(159, 195, 240)"]):not([style*="background:#9fc3f0" i]){color:#1955A0!important}
+:is([style*="color:#9fd0ff" i],[style*="color: rgb(159, 208, 255)"]):not([style*="background:#9fd0ff" i]){color:#0C569C!important}
+:is([style*="color:#9fe8c4" i],[style*="color: rgb(159, 232, 196)"]):not([style*="background:#9fe8c4" i]){color:#17613D!important}
+:is([style*="color:#a0a0b8" i],[style*="color: rgb(160, 160, 184)"]):not([style*="background:#a0a0b8" i]){color:#545470!important}
+:is([style*="color:#a0a0c0" i],[style*="color: rgb(160, 160, 192)"]):not([style*="background:#a0a0c0" i]){color:#51517A!important}
+:is([style*="color:#a8bcd6" i],[style*="color: rgb(168, 188, 214)"]):not([style*="background:#a8bcd6" i]){color:#3B577D!important}
+:is([style*="color:#a9a9c8" i],[style*="color: rgb(169, 169, 200)"]):not([style*="background:#a9a9c8" i]){color:#525280!important}
+:is([style*="color:#aab3c5" i],[style*="color: rgb(170, 179, 197)"]):not([style*="background:#aab3c5" i]){color:#4A566D!important}
+:is([style*="color:#b0b0d0" i],[style*="color: rgb(176, 176, 208)"]):not([style*="background:#b0b0d0" i]){color:#515187!important}
+:is([style*="color:#b8861b" i],[style*="color: rgb(184, 134, 27)"]):not([style*="background:#b8861b" i]){color:#705211!important}
+:is([style*="color:#b89cff" i],[style*="color: rgb(184, 156, 255)"]):not([style*="background:#b89cff" i]){color:#5920ED!important}
+:is([style*="color:#c4b5fd" i],[style*="color: rgb(196, 181, 253)"]):not([style*="background:#c4b5fd" i]){color:#5027EE!important}
+:is([style*="color:#c7c7e0" i],[style*="color: rgb(199, 199, 224)"]):not([style*="background:#c7c7e0" i]){color:#505090!important}
+:is([style*="color:#c8860a" i],[style*="color: rgb(200, 134, 10)"]):not([style*="background:#c8860a" i]){color:#734E09!important}
+:is([style*="color:#c8c8e8" i],[style*="color: rgb(200, 200, 232)"]):not([style*="background:#c8c8e8" i]){color:#4949AF!important}
+:is([style*="color:#c8e0ff" i],[style*="color: rgb(200, 224, 255)"]):not([style*="background:#c8e0ff" i]){color:#0E52AB!important}
+:is([style*="color:#cfe2ff" i],[style*="color: rgb(207, 226, 255)"]):not([style*="background:#cfe2ff" i]){color:#0F51B6!important}
+:is([style*="color:#cfe3ff" i],[style*="color: rgb(207, 227, 255)"]):not([style*="background:#cfe3ff" i]){color:#0E52B1!important}
+:is([style*="color:#e0e0ff" i],[style*="color: rgb(224, 224, 255)"]):not([style*="background:#e0e0ff" i]){color:#3434EF!important}
+:is([style*="color:#e53" i],[style*="color: rgb(238, 85, 51)"]):not([style*="background:#e53" i]){color:#A3290E!important}
+:is([style*="color:#e57373" i],[style*="color: rgb(229, 115, 115)"]):not([style*="background:#e57373" i]){color:#A92020!important}
+:is([style*="color:#e65100" i],[style*="color: rgb(230, 81, 0)"]):not([style*="background:#e65100" i]){color:#933B0C!important}
+:is([style*="color:#e6dcff" i],[style*="color: rgb(230, 220, 255)"]):not([style*="background:#e6dcff" i]){color:#5C22ED!important}
+:is([style*="color:#e74c3c" i],[style*="color: rgb(231, 76, 60)"]):not([style*="background:#e74c3c" i]){color:#A82314!important}
+:is([style*="color:#e7a0ad" i],[style*="color: rgb(231, 160, 173)"]):not([style*="background:#e7a0ad" i]){color:#A1293F!important}
+:is([style*="color:#f06262" i],[style*="color: rgb(240, 98, 98)"]):not([style*="background:#f06262" i]){color:#AE1010!important}
+:is([style*="color:#f39c12" i],[style*="color: rgb(243, 156, 18)"]):not([style*="background:#f39c12" i]){color:#774D0A!important}
+:is([style*="color:#fbbf24" i],[style*="color: rgb(251, 191, 36)"]):not([style*="background:#fbbf24" i]){color:#6E5209!important}
+:is([style*="color:#ff3b2f" i],[style*="color: rgb(255, 59, 47)"]):not([style*="background:#ff3b2f" i]){color:#AB170E!important}
+:is([style*="color:#ff6666" i],[style*="color: rgb(255, 102, 102)"]):not([style*="background:#ff6666" i]){color:#AE0E0E!important}
+:is([style*="color:#ff6b00" i],[style*="color: rgb(255, 107, 0)"]):not([style*="background:#ff6b00" i]){color:#89400B!important}
+:is([style*="color:#ff6b5e" i],[style*="color: rgb(255, 107, 94)"]):not([style*="background:#ff6b5e" i]){color:#AC1A0E!important}
+:is([style*="color:#ff6b6b" i],[style*="color: rgb(255, 107, 107)"]):not([style*="background:#ff6b6b" i]){color:#AE0E0E!important}
+:is([style*="color:#ff8a80" i],[style*="color: rgb(255, 138, 128)"]):not([style*="background:#ff8a80" i]){color:#AA1A0E!important}
+:is([style*="color:#ff8c00" i],[style*="color: rgb(255, 140, 0)"]):not([style*="background:#ff8c00" i]){color:#804A0B!important}
+:is([style*="color:#ff8c33" i],[style*="color: rgb(255, 140, 51)"]):not([style*="background:#ff8c33" i]){color:#89420B!important}
+:is([style*="color:#ff8fa3" i],[style*="color: rgb(255, 143, 163)"]):not([style*="background:#ff8fa3" i]){color:#AA0E2A!important}
+:is([style*="color:#ff9040" i],[style*="color: rgb(255, 144, 64)"]):not([style*="background:#ff9040" i]){color:#8C410C!important}
+:is([style*="color:#ff9800" i],[style*="color: rgb(255, 152, 0)"]):not([style*="background:#ff9800" i]){color:#7A4D0A!important}
+:is([style*="color:#ffb300" i],[style*="color: rgb(255, 179, 0)"]):not([style*="background:#ffb300" i]){color:#715209!important}
+:is([style*="color:#ffb36b" i],[style*="color: rgb(255, 179, 107)"]):not([style*="background:#ffb36b" i]){color:#84460B!important}
+:is([style*="color:#ffb4b4" i],[style*="color: rgb(255, 180, 180)"]):not([style*="background:#ffb4b4" i]){color:#B00E0E!important}
+:is([style*="color:#ffb74d" i],[style*="color: rgb(255, 183, 77)"]):not([style*="background:#ffb74d" i]){color:#7B4D0A!important}
+:is([style*="color:#ffc107" i],[style*="color: rgb(255, 193, 7)"]):not([style*="background:#ffc107" i]){color:#6A5208!important}
+:is([style*="color:#ffc9c4" i],[style*="color: rgb(255, 201, 196)"]):not([style*="background:#ffc9c4" i]){color:#A71A0E!important}
+:is([style*="color:#ffcccc" i],[style*="color: rgb(255, 204, 204)"]):not([style*="background:#ffcccc" i]){color:#AE0E0E!important}
+:is([style*="color:#ffd0a0" i],[style*="color: rgb(255, 208, 160)"]):not([style*="background:#ffd0a0" i]){color:#81460A!important}
+:is([style*="color:#ffd27a" i],[style*="color: rgb(255, 210, 122)"]):not([style*="background:#ffd27a" i]){color:#714E09!important}
+:is([style*="color:#ffd700" i],[style*="color: rgb(255, 215, 0)"]):not([style*="background:#ffd700" i]){color:#635508!important}
+:is([style*="color:#ffd99a" i],[style*="color: rgb(255, 217, 154)"]):not([style*="background:#ffd99a" i]){color:#774D09!important}
+:is([style*="color:#ffd9a8" i],[style*="color: rgb(255, 217, 168)"]):not([style*="background:#ffd9a8" i]){color:#7A490A!important}
+:is([style*="color:#ffd9b0" i],[style*="color: rgb(255, 217, 176)"]):not([style*="background:#ffd9b0" i]){color:#82480B!important}
 /* תוויות קבועות בכרטיס */
 .card-code{color:var(--muted)!important}
-.ai-alt-chip,.global-search-ai .ai-ico{color:#0F7375!important}
+.ai-alt-chip,.global-search-ai .ai-ico{color:#0D6163!important}
 /* כפתור יציאה, קישור מק"ט (כתום על לבן = 2.4:1), תגית קרטון, תווית מבצע */
-.exit-btn{color:#DC2626!important;border-color:#DC2626!important}
-.exit-btn:hover{background:#FEE2E2!important;color:#B91C1C!important}
-.barcode-row a,.card-meta a[style*="var(--accent)"]{color:#B45309!important}
-.carton-tag{color:#B91C1C!important}
-.promo-price-row .price-label{color:#B45309}
+.exit-btn{color:#A91B1B!important;border-color:#DC2626!important}
+.exit-btn:hover{background:#FEE2E2!important;color:#A71919!important}
+.barcode-row a,.card-meta a[style*="var(--accent)"]{color:#8D4107!important}
+.carton-tag{color:#A71919!important}
+.promo-price-row .price-label{color:#8D4107}
 /* טקסט בצבע המבטא (כתום) על רקע בהיר — 2.4:1 בלבד; מוכהה לכתום-חום */
-[style*="color:var(--accent)"]:not([style*="background:var(--accent)"]):not([style*="background: var(--accent)"]){color:#B45309!important}
+[style*="color:var(--accent)"]:not([style*="background:var(--accent)"]):not([style*="background: var(--accent)"]){color:#8D4107!important}
 .spec-close-btn{color:#475569!important}
 .dealer-edit-input{background:#fff!important;color:var(--text)!important;-webkit-text-fill-color:var(--text)!important}
 /* שורות לקוחות בטאב מימושים/מפיץ (רקע נבנה במשתנה) ותגית "רגיל" */
 [style*="background:rgba(30,30,50,.6)"],[style*="background: rgba(30, 30, 50, 0.6)"]{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
 [style*="background:#333;color:#888"],[style*="background: rgb(51, 51, 51)"]{background:var(--surface2)!important;color:#475569!important}
+/* "יותר עומק" (24.11.2026): תגיות הכרטיס ב-7:1 על הרקע הצבעוני שלהן */
+.card .cat-tag{color:#1E40AF!important}
+.spec-btn.spec-btn-active,.spec-btn.spec-btn-pulse{color:#733F09!important}
+.ai-alt-chip,.global-search-ai .ai-ico{color:#0C585A!important}
