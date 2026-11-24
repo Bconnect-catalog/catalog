@@ -66,7 +66,7 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .price-val,html.sunmode .price-val{color:var(--text)!important;text-shadow:none!important}
 .price-val[style*="color:#fff"]{color:var(--text)!important}
 .promo-price-row .price-label[style*="#f5c842"],.promo-price-row .price-val[style*="#f5c842"]{color:#A15C00!important}
-.promo-price-row .price-label[style*="#ff9800"],.promo-price-row .price-val[style*="#ff9800"]{color:#D35400!important}
+.promo-price-row .price-label[style*="#ff9800"],.promo-price-row .price-val[style*="#ff9800"]{color:#B45309!important}
 .card-name span[style*="#e74c3c"]{color:#C0392B!important}
 .order-label,.item-note-label{color:var(--muted)!important}
 .qty-btn{background:#fff!important;border:1px solid var(--input-border)!important;color:var(--text)!important;box-shadow:none!important}
@@ -133,7 +133,7 @@ html,body{background:var(--bg)!important;color:var(--text)}
 .spec-modal-sub{color:var(--muted)!important}
 .spec-table tr:nth-child(odd){background:var(--surface2)!important}
 .spec-table td{border-bottom:1px solid var(--border)!important}
-.spec-table td:first-child{color:var(--muted)!important}
+.spec-table td:first-child{color:#475569!important}
 .spec-table td:last-child{color:var(--text)!important}
 .spec-modal [style*="color:#fff"],.spec-modal [style*="color:#e8e8f0"]{color:var(--text)!important}
 .modal-box{background:#fff!important;color:var(--text)}
@@ -212,3 +212,120 @@ body:has(#orderBar.visible) #updateDateBadge{display:none!important}
 #sendOrderBtn.send-armed{background:#16A34A!important;border-color:#16A34A!important;color:#fff!important;
   box-shadow:0 0 0 3px rgba(22,163,74,.25)!important}
 @media (prefers-reduced-motion:reduce){.card.card-locate,.card.card-new-blink,.filter-btn.filter-btn-new-blink,.spec-btn.spec-btn-pulse{animation:none}}
+
+
+/* ══ ניגודיות (24.11.2026) ══
+   רקעים כהים מוטבעים שלא היו ברשימת ההמרה (בעיקר גיול חובות / גבייה בפועל):
+   הרקע נשאר כהה בזמן שהטקסט כבר הוכהה → טקסט כהה על כהה. כאן הם מומרים לבהיר באותו גוון. */
+:is([style*="background:#2a2a3a" i],[style*="background: #2a2a3a" i],[style*="background-color:#2a2a3a" i],[style*="background: rgb(42, 42, 58)"],[style*="background-color: rgb(42, 42, 58)"],[style*="background:#2a2a40" i],[style*="background: #2a2a40" i],[style*="background-color:#2a2a40" i],[style*="background: rgb(42, 42, 64)"],[style*="background-color: rgb(42, 42, 64)"],[style*="background:#2c2c3a" i],[style*="background: #2c2c3a" i],[style*="background-color:#2c2c3a" i],[style*="background: rgb(44, 44, 58)"],[style*="background-color: rgb(44, 44, 58)"],[style*="background:#2e2e40" i],[style*="background: #2e2e40" i],[style*="background-color:#2e2e40" i],[style*="background: rgb(46, 46, 64)"],[style*="background-color: rgb(46, 46, 64)"],[style*="background:#1a2a3a" i],[style*="background: #1a2a3a" i],[style*="background-color:#1a2a3a" i],[style*="background: rgb(26, 42, 58)"],[style*="background-color: rgb(26, 42, 58)"],[style*="background:#1a2a3d" i],[style*="background: #1a2a3d" i],[style*="background-color:#1a2a3d" i],[style*="background: rgb(26, 42, 61)"],[style*="background-color: rgb(26, 42, 61)"],[style*="background:#0e1a2e" i],[style*="background: #0e1a2e" i],[style*="background-color:#0e1a2e" i],[style*="background: rgb(14, 26, 46)"],[style*="background-color: rgb(14, 26, 46)"],[style*="background:#182039" i],[style*="background: #182039" i],[style*="background-color:#182039" i],[style*="background: rgb(24, 32, 57)"],[style*="background-color: rgb(24, 32, 57)"],[style*="background:#171e36" i],[style*="background: #171e36" i],[style*="background-color:#171e36" i],[style*="background: rgb(23, 30, 54)"],[style*="background-color: rgb(23, 30, 54)"],[style*="background:#1a1220" i],[style*="background: #1a1220" i],[style*="background-color:#1a1220" i],[style*="background: rgb(26, 18, 32)"],[style*="background-color: rgb(26, 18, 32)"]){background:#fff!important;color:var(--text)!important;border-color:var(--border)!important}
+:is([style*="background:#202a4b" i],[style*="background: #202a4b" i],[style*="background-color:#202a4b" i],[style*="background: rgb(32, 42, 75)"],[style*="background-color: rgb(32, 42, 75)"],[style*="background:#2c3658" i],[style*="background: #2c3658" i],[style*="background-color:#2c3658" i],[style*="background: rgb(44, 54, 88)"],[style*="background-color: rgb(44, 54, 88)"]){background:var(--surface2)!important;color:var(--text)!important;border-color:var(--border)!important}
+:is([style*="background:#16304a" i],[style*="background: #16304a" i],[style*="background-color:#16304a" i],[style*="background: rgb(22, 48, 74)"],[style*="background-color: rgb(22, 48, 74)"]){background:var(--bc-blue-50)!important;color:var(--text)!important;border-color:var(--primary-line)!important}
+:is([style*="background:#3a2a0c" i],[style*="background: #3a2a0c" i],[style*="background-color:#3a2a0c" i],[style*="background: rgb(58, 42, 12)"],[style*="background-color: rgb(58, 42, 12)"],[style*="background:#3d2a00" i],[style*="background: #3d2a00" i],[style*="background-color:#3d2a00" i],[style*="background: rgb(61, 42, 0)"],[style*="background-color: rgb(61, 42, 0)"],[style*="background:#3d2a05" i],[style*="background: #3d2a05" i],[style*="background-color:#3d2a05" i],[style*="background: rgb(61, 42, 5)"],[style*="background-color: rgb(61, 42, 5)"]){background:#FEF9C3!important;color:var(--text)!important;border-color:#EAB308!important}
+:is([style*="background:#2a1724" i],[style*="background: #2a1724" i],[style*="background-color:#2a1724" i],[style*="background: rgb(42, 23, 36)"],[style*="background-color: rgb(42, 23, 36)"],[style*="background:#5a1a1a" i],[style*="background: #5a1a1a" i],[style*="background-color:#5a1a1a" i],[style*="background: rgb(90, 26, 26)"],[style*="background-color: rgb(90, 26, 26)"],[style*="background:#1a0505" i],[style*="background: #1a0505" i],[style*="background-color:#1a0505" i],[style*="background: rgb(26, 5, 5)"],[style*="background-color: rgb(26, 5, 5)"]){background:#FEE2E2!important;color:var(--text)!important;border-color:#FCA5A5!important}
+/* מסגרות כהות מוטבעות של שורות */
+[style*="border-top:1px solid #26304d" i],[style*="border-top: 1px solid rgb(38, 48, 77)"]{border-top-color:var(--border)!important}
+
+/* טקסט צבעוני בהיר מוטבע (כתום/ירוק/תכלת/אפור) — מוכהה באותו גוון ל-4.5:1 לפחות על לבן */
+:is([style*="color:#0090bb" i],[style*="color: rgb(0, 144, 187)"]):not([style*="background:#0090bb" i]){color:#0C7A9A!important}
+:is([style*="color:#00ff88" i],[style*="color: rgb(0, 255, 136)"]):not([style*="background:#00ff88" i]){color:#0B844B!important}
+:is([style*="color:#1a9a5c" i],[style*="color: rgb(26, 154, 92)"]):not([style*="background:#1a9a5c" i]){color:#16804C!important}
+:is([style*="color:#21a366" i],[style*="color: rgb(33, 163, 102)"]):not([style*="background:#21a366" i]){color:#1A8151!important}
+:is([style*="color:#27ae60" i],[style*="color: rgb(39, 174, 96)"]):not([style*="background:#27ae60" i]){color:#1E8449!important}
+:is([style*="color:#2ec58a" i],[style*="color: rgb(46, 197, 138)"]):not([style*="background:#2ec58a" i]){color:#1F835C!important}
+:is([style*="color:#2ed573" i],[style*="color: rgb(46, 213, 115)"]):not([style*="background:#2ed573" i]){color:#1A8345!important}
+:is([style*="color:#4a90d9" i],[style*="color: rgb(74, 144, 217)"]):not([style*="background:#4a90d9" i]){color:#2A76C6!important}
+:is([style*="color:#4caf50" i],[style*="color: rgb(76, 175, 80)"]):not([style*="background:#4caf50" i]){color:#39843C!important}
+:is([style*="color:#5cffa8" i],[style*="color: rgb(92, 255, 168)"]):not([style*="background:#5cffa8" i]){color:#0B8443!important}
+:is([style*="color:#5dade2" i],[style*="color: rgb(93, 173, 226)"]):not([style*="background:#5dade2" i]){color:#1F76AF!important}
+:is([style*="color:#6baeff" i],[style*="color: rgb(107, 174, 255)"]):not([style*="background:#6baeff" i]){color:#126EDE!important}
+:is([style*="color:#7a8299" i],[style*="color: rgb(122, 130, 153)"]):not([style*="background:#7a8299" i]){color:#6A728A!important}
+:is([style*="color:#7d93b0" i],[style*="color: rgb(125, 147, 176)"]):not([style*="background:#7d93b0" i]){color:#5B7495!important}
+:is([style*="color:#7ee69c" i],[style*="color: rgb(126, 230, 156)"]):not([style*="background:#7ee69c" i]){color:#197F36!important}
+:is([style*="color:#7f8bb0" i],[style*="color: rgb(127, 139, 176)"]):not([style*="background:#7f8bb0" i]){color:#606F9C!important}
+:is([style*="color:#7fb2ff" i],[style*="color: rgb(127, 178, 255)"]):not([style*="background:#7fb2ff" i]){color:#176CEC!important}
+:is([style*="color:#7fd694" i],[style*="color: rgb(127, 214, 148)"]):not([style*="background:#7fd694" i]){color:#297F3D!important}
+:is([style*="color:#82b1ff" i],[style*="color: rgb(130, 177, 255)"]):not([style*="background:#82b1ff" i]){color:#1A69EC!important}
+:is([style*="color:#86efac" i],[style*="color: rgb(134, 239, 172)"]):not([style*="background:#86efac" i]){color:#11833B!important}
+:is([style*="color:#8792b3" i],[style*="color: rgb(135, 146, 179)"]):not([style*="background:#8792b3" i]){color:#62709B!important}
+:is([style*="color:#888" i],[style*="color: rgb(136, 136, 136)"]):not([style*="background:#888" i]){color:#747474!important}
+:is([style*="color:#8888aa" i],[style*="color: rgb(136, 136, 170)"]):not([style*="background:#8888aa" i]){color:#707099!important}
+:is([style*="color:#8891a5" i],[style*="color: rgb(136, 145, 165)"]):not([style*="background:#8891a5" i]){color:#677289!important}
+:is([style*="color:#88aaff" i],[style*="color: rgb(136, 170, 255)"]):not([style*="background:#88aaff" i]){color:#3368EE!important}
+:is([style*="color:#8a8a99" i],[style*="color: rgb(138, 138, 153)"]):not([style*="background:#8a8a99" i]){color:#707080!important}
+:is([style*="color:#8a93a8" i],[style*="color: rgb(138, 147, 168)"]):not([style*="background:#8a93a8" i]){color:#68738C!important}
+:is([style*="color:#8ef0bb" i],[style*="color: rgb(142, 240, 187)"]):not([style*="background:#8ef0bb" i]){color:#118245!important}
+:is([style*="color:#8f8fb0" i],[style*="color: rgb(143, 143, 176)"]):not([style*="background:#8f8fb0" i]){color:#71719B!important}
+:is([style*="color:#8fb0e0" i],[style*="color: rgb(143, 176, 224)"]):not([style*="background:#8fb0e0" i]){color:#3772C8!important}
+:is([style*="color:#8fbfa6" i],[style*="color: rgb(143, 191, 166)"]):not([style*="background:#8fbfa6" i]){color:#498064!important}
+:is([style*="color:#9aa6c8" i],[style*="color: rgb(154, 166, 200)"]):not([style*="background:#9aa6c8" i]){color:#5F72A8!important}
+:is([style*="color:#9db4d0" i],[style*="color: rgb(157, 180, 208)"]):not([style*="background:#9db4d0" i]){color:#4F75A4!important}
+:is([style*="color:#9fb0dd" i],[style*="color: rgb(159, 176, 221)"]):not([style*="background:#9fb0dd" i]){color:#5472C2!important}
+:is([style*="color:#9fb4ea" i],[style*="color: rgb(159, 180, 234)"]):not([style*="background:#9fb4ea" i]){color:#436CD6!important}
+:is([style*="color:#9fc3f0" i],[style*="color: rgb(159, 195, 240)"]):not([style*="background:#9fc3f0" i]){color:#2171D5!important}
+:is([style*="color:#9fd0ff" i],[style*="color: rgb(159, 208, 255)"]):not([style*="background:#9fd0ff" i]){color:#1175D5!important}
+:is([style*="color:#9fe8c4" i],[style*="color: rgb(159, 232, 196)"]):not([style*="background:#9fe8c4" i]){color:#1E7E4F!important}
+:is([style*="color:#a0a0b8" i],[style*="color: rgb(160, 160, 184)"]):not([style*="background:#a0a0b8" i]){color:#717195!important}
+:is([style*="color:#a0a0c0" i],[style*="color: rgb(160, 160, 192)"]):not([style*="background:#a0a0c0" i]){color:#6F6F9F!important}
+:is([style*="color:#a8bcd6" i],[style*="color: rgb(168, 188, 214)"]):not([style*="background:#a8bcd6" i]){color:#5077AA!important}
+:is([style*="color:#a9a9c8" i],[style*="color: rgb(169, 169, 200)"]):not([style*="background:#a9a9c8" i]){color:#6B6BA0!important}
+:is([style*="color:#aab3c5" i],[style*="color: rgb(170, 179, 197)"]):not([style*="background:#aab3c5" i]){color:#637391!important}
+:is([style*="color:#b0b0d0" i],[style*="color: rgb(176, 176, 208)"]):not([style*="background:#b0b0d0" i]){color:#6A6AA6!important}
+:is([style*="color:#b8861b" i],[style*="color: rgb(184, 134, 27)"]):not([style*="background:#b8861b" i]){color:#946C16!important}
+:is([style*="color:#b89cff" i],[style*="color: rgb(184, 156, 255)"]):not([style*="background:#b89cff" i]){color:#7C4FF1!important}
+:is([style*="color:#c4b5fd" i],[style*="color: rgb(196, 181, 253)"]):not([style*="background:#c4b5fd" i]){color:#7251F1!important}
+:is([style*="color:#c7c7e0" i],[style*="color: rgb(199, 199, 224)"]):not([style*="background:#c7c7e0" i]){color:#6B6BAD!important}
+:is([style*="color:#c8860a" i],[style*="color: rgb(200, 134, 10)"]):not([style*="background:#c8860a" i]){color:#9D6B0D!important}
+:is([style*="color:#c8c8e8" i],[style*="color: rgb(200, 200, 232)"]):not([style*="background:#c8c8e8" i]){color:#6A6AC1!important}
+:is([style*="color:#c8e0ff" i],[style*="color: rgb(200, 224, 255)"]):not([style*="background:#c8e0ff" i]){color:#1370E8!important}
+:is([style*="color:#cfe2ff" i],[style*="color: rgb(207, 226, 255)"]):not([style*="background:#cfe2ff" i]){color:#166BEC!important}
+:is([style*="color:#cfe3ff" i],[style*="color: rgb(207, 227, 255)"]):not([style*="background:#cfe3ff" i]){color:#166FEC!important}
+:is([style*="color:#e0e0ff" i],[style*="color: rgb(224, 224, 255)"]):not([style*="background:#e0e0ff" i]){color:#5E5EF2!important}
+:is([style*="color:#e53" i],[style*="color: rgb(238, 85, 51)"]):not([style*="background:#e53" i]){color:#D23512!important}
+:is([style*="color:#e57373" i],[style*="color: rgb(229, 115, 115)"]):not([style*="background:#e57373" i]){color:#D82E2E!important}
+:is([style*="color:#e65100" i],[style*="color: rgb(230, 81, 0)"]):not([style*="background:#e65100" i]){color:#C24E10!important}
+:is([style*="color:#e6dcff" i],[style*="color: rgb(230, 220, 255)"]):not([style*="background:#e6dcff" i]){color:#7F51F1!important}
+:is([style*="color:#e74c3c" i],[style*="color: rgb(231, 76, 60)"]):not([style*="background:#e74c3c" i]){color:#DF2E1B!important}
+:is([style*="color:#e7a0ad" i],[style*="color: rgb(231, 160, 173)"]):not([style*="background:#e7a0ad" i]){color:#CE3E59!important}
+:is([style*="color:#f06262" i],[style*="color: rgb(240, 98, 98)"]):not([style*="background:#f06262" i]){color:#E11515!important}
+:is([style*="color:#f39c12" i],[style*="color: rgb(243, 156, 18)"]):not([style*="background:#f39c12" i]){color:#9D650D!important}
+:is([style*="color:#fbbf24" i],[style*="color: rgb(251, 191, 36)"]):not([style*="background:#fbbf24" i]){color:#8F6A0C!important}
+:is([style*="color:#ff3b2f" i],[style*="color: rgb(255, 59, 47)"]):not([style*="background:#ff3b2f" i]){color:#DF1E12!important}
+:is([style*="color:#ff6666" i],[style*="color: rgb(255, 102, 102)"]):not([style*="background:#ff6666" i]){color:#E21212!important}
+:is([style*="color:#ff6b00" i],[style*="color: rgb(255, 107, 0)"]):not([style*="background:#ff6b00" i]){color:#B3540F!important}
+:is([style*="color:#ff6b5e" i],[style*="color: rgb(255, 107, 94)"]):not([style*="background:#ff6b5e" i]){color:#E42313!important}
+:is([style*="color:#ff6b6b" i],[style*="color: rgb(255, 107, 107)"]):not([style*="background:#ff6b6b" i]){color:#E71313!important}
+:is([style*="color:#ff8a80" i],[style*="color: rgb(255, 138, 128)"]):not([style*="background:#ff8a80" i]){color:#DE2212!important}
+:is([style*="color:#ff8c00" i],[style*="color: rgb(255, 140, 0)"]):not([style*="background:#ff8c00" i]){color:#AA630E!important}
+:is([style*="color:#ff8c33" i],[style*="color: rgb(255, 140, 51)"]):not([style*="background:#ff8c33" i]){color:#B3560F!important}
+:is([style*="color:#ff8fa3" i],[style*="color: rgb(255, 143, 163)"]):not([style*="background:#ff8fa3" i]){color:#E31238!important}
+:is([style*="color:#ff9040" i],[style*="color: rgb(255, 144, 64)"]):not([style*="background:#ff9040" i]){color:#B6550F!important}
+:is([style*="color:#ff9800" i],[style*="color: rgb(255, 152, 0)"]):not([style*="background:#ff9800" i]){color:#A0650D!important}
+:is([style*="color:#ffb300" i],[style*="color: rgb(255, 179, 0)"]):not([style*="background:#ffb300" i]){color:#976E0C!important}
+:is([style*="color:#ffb36b" i],[style*="color: rgb(255, 179, 107)"]):not([style*="background:#ffb36b" i]){color:#AE5C0E!important}
+:is([style*="color:#ffb4b4" i],[style*="color: rgb(255, 180, 180)"]):not([style*="background:#ffb4b4" i]){color:#DF1212!important}
+:is([style*="color:#ffb74d" i],[style*="color: rgb(255, 183, 77)"]):not([style*="background:#ffb74d" i]){color:#9C620D!important}
+:is([style*="color:#ffc107" i],[style*="color: rgb(255, 193, 7)"]):not([style*="background:#ffc107" i]){color:#8B6B0B!important}
+:is([style*="color:#ffc9c4" i],[style*="color: rgb(255, 201, 196)"]):not([style*="background:#ffc9c4" i]){color:#E42413!important}
+:is([style*="color:#ffcccc" i],[style*="color: rgb(255, 204, 204)"]):not([style*="background:#ffcccc" i]){color:#E21212!important}
+:is([style*="color:#ffd0a0" i],[style*="color: rgb(255, 208, 160)"]):not([style*="background:#ffd0a0" i]){color:#B0600E!important}
+:is([style*="color:#ffd27a" i],[style*="color: rgb(255, 210, 122)"]):not([style*="background:#ffd27a" i]){color:#97680C!important}
+:is([style*="color:#ffd700" i],[style*="color: rgb(255, 215, 0)"]):not([style*="background:#ffd700" i]){color:#84710B!important}
+:is([style*="color:#ffd99a" i],[style*="color: rgb(255, 217, 154)"]):not([style*="background:#ffd99a" i]){color:#98630C!important}
+:is([style*="color:#ffd9a8" i],[style*="color: rgb(255, 217, 168)"]):not([style*="background:#ffd9a8" i]){color:#A5630D!important}
+:is([style*="color:#ffd9b0" i],[style*="color: rgb(255, 217, 176)"]):not([style*="background:#ffd9b0" i]){color:#AC600E!important}
+/* תוויות קבועות בכרטיס */
+.card-code{color:var(--muted)!important}
+.ai-alt-chip,.global-search-ai .ai-ico{color:#0F7375!important}
+/* כפתור יציאה, קישור מק"ט (כתום על לבן = 2.4:1), תגית קרטון, תווית מבצע */
+.exit-btn{color:#DC2626!important;border-color:#DC2626!important}
+.exit-btn:hover{background:#FEE2E2!important;color:#B91C1C!important}
+.barcode-row a,.card-meta a[style*="var(--accent)"]{color:#B45309!important}
+.carton-tag{color:#B91C1C!important}
+.promo-price-row .price-label{color:#B45309}
+/* טקסט בצבע המבטא (כתום) על רקע בהיר — 2.4:1 בלבד; מוכהה לכתום-חום */
+[style*="color:var(--accent)"]:not([style*="background:var(--accent)"]):not([style*="background: var(--accent)"]){color:#B45309!important}
+.spec-close-btn{color:#475569!important}
+.dealer-edit-input{background:#fff!important;color:var(--text)!important;-webkit-text-fill-color:var(--text)!important}
+/* שורות לקוחות בטאב מימושים/מפיץ (רקע נבנה במשתנה) ותגית "רגיל" */
+[style*="background:rgba(30,30,50,.6)"],[style*="background: rgba(30, 30, 50, 0.6)"]{background:#fff!important;border-color:var(--border)!important;color:var(--text)!important}
+[style*="background:#333;color:#888"],[style*="background: rgb(51, 51, 51)"]{background:var(--surface2)!important;color:#475569!important}
