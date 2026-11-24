@@ -24393,11 +24393,16 @@ function _agingCredit(a) {
 }
 function _agingCreditLabel(cr) { return cr ? (cr.days ? 'שוטף + ' + cr.days : 'ללא אשראי') : ''; }
 function _agingGraceLabel(c) { var g = Number((c || {}).graceDays) || 0; return g ? 'גבייה ' + g + ' יום אחרי תאריך הערך' : ''; }
-function _agingOverdueAmt(rows) { return _agingSum((rows || []).filter(_agingOverdue)); }
-// לתשלום עד סוף החודש הנוכחי: מסמכים שתאריך הערך שלהם מהיום ועד סוף החודש
+// 24/11/26: האיחור והתשלום החודשי מחושבים אחרי קיזוז — תקבול/זיכוי פתוח (גם צ'ק דחוי שעוד לא נפרע)
+// סוגר קודם את החשבוניות הוותיקות, כמו _agingPayPlan והדוח המרוכז. לקוח ביתרת זכות = אין איחור.
+function _agingOverdueAmt(rows) {
+  var t = _agingToday();
+  return Math.round(_agingPayPlan(rows || []).reduce(function (s, g) { return s + (g.date < t ? g.amt : 0); }, 0) * 100) / 100;
+}
+// לתשלום עד סוף החודש הנוכחי: מה שנשאר אחרי הקיזוז, עם מועד מהיום ועד סוף החודש
 function _agingDueThisMonth(rows) {
   var t = _agingToday(), e = _agingIso(_agingEom(t));
-  return _agingSum((rows || []).filter(function (r) { var v = _agingDue(r); return v >= t && v <= e; }));
+  return Math.round(_agingPayPlan(rows || []).reduce(function (s, g) { return s + (g.date >= t && g.date <= e ? g.amt : 0); }, 0) * 100) / 100;
 }
 function _agingSum(rows) { return Math.round(rows.reduce(function (s, r) { return s + (Number(r.open) || 0); }, 0) * 100) / 100; }
 
@@ -24527,7 +24532,8 @@ function _agingLoad(num, name) {
     }
     var rows = (d.rows || []).slice().sort(function (a, b) { return a.valueDate < b.valueDate ? -1 : a.valueDate > b.valueDate ? 1 : 0; });
     _agingApplyPaid(rows, d.collections);
-    var sel = {}; rows.forEach(function (r, i) { if (!r._paid && _agingOverdue(r)) sel[i] = true; });   // ברירת מחדל: מה שבאיחור
+    var sel = {}, _netOver = _agingOverdueAmt(_agingLive(rows));
+    if (_netOver >= 1) rows.forEach(function (r, i) { if (!r._paid && _agingOverdue(r)) sel[i] = true; });   // ברירת מחדל: מה שבאיחור — רק אם נשאר איחור אחרי קיזוז
     _aging = {num: d.num, name: d.name || name || '', agent: d.agent, rows: rows, contact: d.contact || {}, meta: d.meta || {}, sel: sel, note: '', mode: 'selected',
               collections: (d.collections || []).slice().sort(function (x, y) { return x.createdAt < y.createdAt ? 1 : -1; }),
               receipts: d.receipts || [], showRc: false, rcOpen: {}};
@@ -24540,7 +24546,7 @@ function _agingRender() {
   // סכומים רק על מה שלא נגבה (גבייה ממתינה סוגרת את החשבוניות שלה עד הדוח הבא)
   var live = _agingLive(a.rows);
   var c = a.contact || {}, all = _agingSum(live);
-  var over = _agingSum(live.filter(_agingOverdue));
+  var over = _agingOverdueAmt(live);
   var pendColl = (a.collections || []).filter(function (x) { return x.pending; });
   var pendTotal = Math.round(pendColl.reduce(function (s, x) { return s + (Number(x.total) || 0); }, 0) * 100) / 100;
   var buckets = ['Current', '0 - 30', '31 - 60', '61 - 90', '91 - 120', '121 +'], bsum = {};
@@ -24575,7 +24581,9 @@ function _agingRender() {
   var rcOpenChk = function (rc) { return !!rc.valueDate && String(rc.valueDate) > _agingToday(); };
   var nChk = rcs.filter(rcOpenChk).length, sChk = _agingSum(rcs.filter(rcOpenChk).map(function (rc) { return {open: rc.amount}; }));
   h += '<div style="display:flex;gap:6px;padding:4px 16px 8px">' +
-    '<div style="flex:1;min-width:0;background:#1b2340;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#8792b3">יתרה כוללת</div><div style="font-weight:800;font-size:.92rem;direction:ltr;text-align:right">' + _agingMoney(all) + '</div></div>' +
+    (all <= -1
+      ? '<div style="flex:1;min-width:0;background:#123323;border:1px solid #2ec58a;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#5fd38d">💚 יתרת זכות</div><div style="font-weight:800;font-size:.92rem;color:#5fd38d;direction:ltr;text-align:right">' + _agingMoney(-all) + '</div></div>'
+      : '<div style="flex:1;min-width:0;background:#1b2340;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#8792b3">יתרה כוללת</div><div style="font-weight:800;font-size:.92rem;direction:ltr;text-align:right">' + _agingMoney(all) + '</div></div>') +
     '<div style="flex:1;min-width:0;background:#2a1724;border:1px solid #5c2635;border-radius:10px;padding:8px 8px"><div style="font-size:.7rem;color:#e7a0ad">באיחור</div><div style="font-weight:800;font-size:.92rem;color:#ff8a8a;direction:ltr;text-align:right">' + _agingMoney(over) + '</div></div>' +
     // טאב קבלות (09/11/26): לחיצה פותחת את רשימת הקבלות, החדשה ראשונה
     '<button onclick="_agingToggleRc()" aria-expanded="' + (a.showRc ? 'true' : 'false') + '" style="flex:.8;min-width:0;text-align:right;font:inherit;color:inherit;cursor:pointer;background:' + (a.showRc ? '#1a6b45' : '#123323') + ';border:1px solid #2ec58a;border-radius:10px;padding:8px 8px">' +
@@ -24818,7 +24826,9 @@ function _agingBuildPdfHolder() {
     '<div style="text-align:left"><div style="font-size:20px;font-weight:900;color:#2f6fd6;font-style:italic">BConnect</div><div style="font-size:11px;color:#5a6378">ביקונקט טכנולוגיות בע"מ</div></div></div>';
   h += '<div style="display:flex;justify-content:space-between;margin:14px 0 10px;font-size:13.5px">' +
     '<div><b style="font-size:16px">' + _agingEsc(a.name) + '</b><br>מספר לקוח: ' + _agingEsc(a.num) + (c.contact ? '<br>לכבוד: ' + _agingEsc(c.contact) : '') + '</div>' +
-    '<div style="text-align:left">יתרה כוללת: <b dir="ltr">' + _agingMoney(_agingSum(_agingLive(a.rows))) + ' ₪</b><br>באיחור: <b dir="ltr" style="color:#c62828">' + _agingMoney(_agingSum(_agingLive(a.rows).filter(_agingOverdue))) + ' ₪</b></div></div>';
+    (function () { var _t = _agingSum(_agingLive(a.rows)), _o = _agingOverdueAmt(_agingLive(a.rows));
+      return '<div style="text-align:left">' + (_t <= -1 ? 'יתרת זכות: <b dir="ltr" style="color:#15803d">' + _agingMoney(-_t) + ' ₪</b>' : 'יתרה כוללת: <b dir="ltr">' + _agingMoney(_t) + ' ₪</b>') +
+        (_o >= 1 ? '<br>באיחור: <b dir="ltr" style="color:#c62828">' + _agingMoney(_o) + ' ₪</b>' : '') + '</div></div>'; })();
   if (a.note && a.note.trim()) h += '<div style="background:#fff8d6;border:1px solid #f0d77a;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:10px">' + _agingEsc(a.note.trim()).replace(/\n/g, '<br>') + '</div>';
   h += '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
     (a.mode === 'all' ? '<th style="' + th + ';width:22px"></th>' : '') +
@@ -25079,8 +25089,13 @@ function _agingOrderCheck(num, name) {
     if (!d || !d.ok || !(d.rows || []).length) return;
     // עדכון גבייה של הסוכן גובר על הדוח — חשבוניות שנגבו לא נחשבות חריגה
     var liveR = _agingLive(_agingApplyPaid(d.rows, d.collections));
-    var over = _agingOverdueAmt(liveR), dueM = _agingDueThisMonth(liveR);
-    if (over < 1 && dueM < 1) return;
+    var over = _agingOverdueAmt(liveR), dueM = _agingDueThisMonth(liveR), bal = _agingSum(liveR);
+    if (over < 1 && dueM < 1) {
+      // לקוח ביתרת זכות — מציגים את הזכות (לא חוב)
+      if (bal <= -1) _agingShowOrderAlert({num: d.num || num, name: d.name || name, over: 0, dueM: 0, creditBal: -bal, fifo: _agingIsEstimated({meta: d.meta, rows: d.rows}),
+                                           credit: _agingCreditLabel(_agingCredit({rows: d.rows, contact: d.contact || {}})), pay: (d.contact || {}).payMethod || ''});
+      return;
+    }
     var badge = document.getElementById('agentCustBadge');
     if (badge && over >= 1 && badge.innerHTML.indexOf('agingOverTag') < 0)
       badge.innerHTML += '<div id="agingOverTag" style="margin-top:6px;color:#ff8a8a;font-weight:800">⚠️ לקוח בחריגת תשלום · <span dir="ltr">' + _agingMoney(over) + ' ₪</span></div>';
@@ -25091,22 +25106,23 @@ function _agingOrderCheck(num, name) {
 
 function _agingShowOrderAlert(x) {
   var old = document.getElementById('agingOrderAlert'); if (old) old.remove();
-  var red = x.over >= 1;
+  var red = x.over >= 1, green = !red && x.creditBal >= 1;
   var o = document.createElement('div');
   o.id = 'agingOrderAlert';
   o.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center';
   var eom = _agingDate(_agingIso(_agingEom(_agingToday())));
-  o.innerHTML = '<div style="width:90%;max-width:400px;background:#1a1220;border:2px solid ' + (red ? '#e53935' : '#2f6fd6') + ';border-radius:16px;overflow:hidden;direction:rtl;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.6)">' +
-    '<div style="background:' + (red ? '#c62828' : '#24508f') + ';padding:12px 16px;font-weight:900;font-size:1.05rem">' + (red ? '⚠️ לקוח בחריגת תשלום' : '📅 תזכורת תשלום') + '</div>' +
+  o.innerHTML = '<div style="width:90%;max-width:400px;background:#1a1220;border:2px solid ' + (red ? '#e53935' : green ? '#2ec58a' : '#2f6fd6') + ';border-radius:16px;overflow:hidden;direction:rtl;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.6)">' +
+    '<div style="background:' + (red ? '#c62828' : green ? '#1a7a4c' : '#24508f') + ';padding:12px 16px;font-weight:900;font-size:1.05rem">' + (red ? '⚠️ לקוח בחריגת תשלום' : green ? '💚 לקוח ביתרת זכות' : '📅 תזכורת תשלום') + '</div>' +
     '<div style="padding:14px 16px;font-size:.9rem;line-height:1.6">' +
       '<b>' + _agingEsc(x.name) + '</b> <span style="color:#a9a9c8">(' + _agingEsc(x.num) + ')</span>' +
       (x.credit || x.pay ? '<div style="color:#c7c7e0;font-size:.8rem">' + [x.credit && 'אשראי: ' + x.credit, x.pay && 'תשלום: ' + _agingEsc(x.pay)].filter(Boolean).join(' · ') + '</div>' : '') +
       (red ? '<div style="margin-top:8px">חוב באיחור: <b style="color:#ff8a8a;font-size:1.05rem" dir="ltr">' + _agingMoney(x.over) + ' ₪</b></div>' : '') +
+      (green ? '<div style="margin-top:8px">יתרת זכות בכרטיס: <b style="color:#5fd38d;font-size:1.05rem" dir="ltr">' + _agingMoney(x.creditBal) + ' ₪</b></div>' : '') +
       (x.dueM >= 1 ? '<div style="margin-top:6px">עד סוף החודש (' + eom + ') על הלקוח לשלם: <b style="color:#9fd0ff" dir="ltr">' + _agingMoney(x.dueM) + ' ₪</b></div>' : '') +
       '<div style="color:#8f8fb0;font-size:.72rem;margin-top:6px">הסכומים כוללים מע״מ' + (x.fifo ? ' · חישוב משוער — לאמת מול מערכת הגבייה' : '') + '</div>' +
     '</div>' +
     '<div style="display:flex;gap:8px;padding:0 16px 14px">' +
-      '<button id="agingAlertOpen" style="flex:1;padding:10px;border-radius:10px;border:none;background:' + (red ? '#e53935' : '#2f6fd6') + ';color:#fff;font-weight:800;cursor:pointer">💳 לגיול חובות</button>' +
+      '<button id="agingAlertOpen" style="flex:1;padding:10px;border-radius:10px;border:none;background:' + (red ? '#e53935' : green ? '#1a7a4c' : '#2f6fd6') + ';color:#fff;font-weight:800;cursor:pointer">💳 לגיול חובות</button>' +
       '<button id="agingAlertClose" style="flex:1;padding:10px;border-radius:10px;border:1px solid #555;background:none;color:#ddd;cursor:pointer">המשך להזמנה</button></div></div>';
   document.body.appendChild(o);
   document.getElementById('agingAlertClose').onclick = function () { o.remove(); };
