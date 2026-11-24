@@ -14449,7 +14449,7 @@ function _buildHistHTML(hist) {
       + '<span style="color:#f1c40f;font-weight:700;font-size:.85rem">₪' + (h.total||0).toFixed(0) + '</span>'
       + '<button data-xlkey="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0;line-height:1" title="הורד Excel"><img src="img/2ca918b96a90.webp" style="height:22px;width:auto" alt="Excel"></button>'
       + (_xlMailAllowed() ? '<button data-xlmail="' + _dupKey + '" style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;font-size:1.15rem;line-height:1" title="שלח לי את האקסל במייל" aria-label="שלח לי את האקסל במייל">📧</button>' : '')
-      + '<button data-dup="' + _dupKey + '" style="background:none;border:none;color:#4caf50;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="שכפל הזמנה">📋</button>'
+      // 24/11/26: כפתור 📋 שכפול הזמנה הוסר לבקשת מרקו (מבלבל, לא משרת אף אחד). duplicateHistoryItem נשאר — ✏️ עריכה משתמשת בו.
       + ((_histIsStaff() && h.status !== 'הוחלפה') ? '<button data-edit="' + _dupKey + '" style="background:none;border:none;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="עריכת הזמנה — הכמויות חוזרות למלאי וההזמנה המעודכנת תחליף את זו">✏️</button>' : '')
       + (_mgrViewOnly(h.agent, h.customerUser) ? '' : '<button data-del-key="' + _dupKey + '" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:1rem;padding:0;line-height:1" title="מחק">🗑</button>')
       + '</div></div>'
