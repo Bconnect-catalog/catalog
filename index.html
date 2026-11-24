@@ -8944,7 +8944,8 @@ function doExportExcel() {
     if (_edXl) { sc(R,0,_edXl,true,12,'FFE65100','right'); merge(R,0,6); R++; }
 
     // פרטי לקוח קצה (משלוח לבית לקוח) — מודגש באדום
-    var _ecXl = getEndCustomerDetails();
+    // ייצוא חוזר מהיסטוריה — לקוח הקצה של ההזמנה עצמה, לא של העגלה הפתוחה
+    var _ecXl = window._histExport ? (window._histExport.endCust || null) : getEndCustomerDetails();
     if (_ecXl) {
       ['משלוח לבית לקוח', 'לקוח קצה: ' + _ecXl.name, 'כתובת: ' + _ecXl.addr, 'טלפון: ' + _ecXl.phone]
         .forEach(function(txt) {
@@ -11589,8 +11590,12 @@ function _saveHistory(extraOrderNum) {
     // שורת המשלוח כפי שיצאה בהזמנה (null = בלי משלוח) — כדי שייצוא חוזר ישכפל אותה בדיוק
     var _shipLine = _items.filter(function(p){return p.barcode==='__shipping__';})[0];
     var _ship = _shipLine ? {name: _shipLine.name, price: _shipLine.dealer_price} : null;
+    // לקוח קצה (משלוח לבית לקוח) — נשמר עם ההזמנה, כדי שהאקסל מההיסטוריה / 📧 יכלול אותו (24/11/26)
+    var _ecH = getEndCustomerDetails();
+    var _endCust = _ecH ? {name: _ecH.name || '', addr: _ecH.addr || '', phone: _ecH.phone || ''} : null;
     var _entry = {
       ship: _ship,
+      endCust: _endCust,
       date: new Date().toLocaleString('he-IL'),
       customerName: _customer.trim(),
       customerNumber: _custNum.trim(),
@@ -11637,6 +11642,7 @@ function _saveHistory(extraOrderNum) {
         total: _total,
         items: _entry.items,
         ship: _ship,
+        endCust: _endCust,
         status: _ed ? 'עודכנה' : undefined,
         replaces: _ed ? {date: _ed.date, customerName: _ed.customerName, total: _ed.total} : undefined
       }));
@@ -13228,6 +13234,14 @@ function editHistoryItem(key) {
       var cur = p ? roundHalf(parseFloat(getEffectiveDealerPrice(p)) || 0) : Number(it.price);
       window._itemMeta[k] = { by: it.by || (_origByStaff ? 'agent' : 'customer'), pxby: it.pxby || null, basePrice: cur };
     });
+    // משלוח לבית לקוח — פרטי לקוח הקצה חוזרים עם ההזמנה הנערכת
+    if (src.endCust && src.endCust.name) {
+      window._endCustomer = {name: src.endCust.name, addr: src.endCust.addr || '', phone: src.endCust.phone || ''};
+      window._homeDeliveryConfirmed = true;
+      var _ecIds = {endCustomerName: 'name', endCustomerAddress: 'addr', endCustomerPhone: 'phone'};
+      Object.keys(_ecIds).forEach(function(id){ var el = document.getElementById(id); if (el) el.value = window._endCustomer[_ecIds[id]]; });
+      var _dsE = document.getElementById('deliverySelect'); if (_dsE) _dsE.value = 'home';
+    }
     window._editingOrder = {date: src.date, customerName: src.customerName || '', customerNumber: src.customerNumber || '', customerUser: src.customerUser || '',
                             total: Number(src.total) || 0, orderNumber: src.orderNumber || '', items: src.items || []};
     _editAdjustLocalStock(src.items, +1);
