@@ -1774,7 +1774,7 @@ function _doLoginCheck(u, p, err, btn) {
     // ברירת המחדל "חסום מ-beyerdynamic_pro" נקבעת בעת יצירת לקוח חדש (function addNewUser),
     // אבל אם המנהל הסיר ידנית את ההגבלה בגיליון - היא תכובד.
     _resetSessionState();   // אסור לרשת שום דבר מהמשתמש הקודם
-    var authObj = {user: match.user, pass: match.pass, role: match.role, name: match.name, blocked_brands: _blockedBrands, realization: match.realization || false, dist: match.dist || false, agent: match.agent || '', view_only: match.view_only || false};
+    var authObj = {user: match.user, pass: match.pass, role: match.role, name: match.name, blocked_brands: _blockedBrands, realization: match.realization || false, dist: match.dist || false, agent: match.agent || '', view_only: match.view_only || false, shipTo: match.shipTo || ''};
     try { sessionStorage.setItem('bc_auth', JSON.stringify(authObj));
     // נשמר גם לטווח ארוך כדי שהכניסה הבאה לא תדרוש לוגאין — ראה BC_AUTH_TTL_DAYS
     try {
@@ -4613,7 +4613,7 @@ const MICROLAB_PRODUCTS = [
 // ══ ALL PRODUCTS (for cross-brand cart) ══
 
 const PHONES_PRODUCTS = [
-  {code:'UNI-7401 BLK',barcode:'4895152903424',name:"חייגן עם דיבורית לחצנים גדולים וצג 8 ז. ישירים שחור",category:"טלפון שולחני",consumer_price:179,dealer_price:107,stock:'מעל 200',is_new:false,price_drop:false},
+  {code:'UNI-7401 BLK',barcode:'4895152903424',name:"חייגן עם דיבורית לחצנים גדולים וצג 8 ז. ישירים שחור",category:"טלפון שולחני",consumer_price:179,dealer_price:107,stock:'מעל 200',is_new:false,price_drop:false,dist_price:84,dist_min_qty:40,dist_carton:20},
   {code:'UNI-8401 BLK',barcode:'4895152901994',name:"חייגן+דיבורית+צג 10 ז. ישירים נורית חיווי שחור",category:"טלפון שולחני",consumer_price:189,dealer_price:113,stock:'מעל 200',is_new:false,price_drop:false},
   {code:'E201IL',barcode:'5055374703250',name:"MOTOROLA E201 אלחוטי מעוצב + דיבורית",category:"טלפון אלחוטי",consumer_price:159,dealer_price:95,stock:0,is_new:false,price_drop:false},
   {code:'T201+BLK',barcode:'5055374703694',name:"MOTOROLA T201+ אלחוטי עם צג ודיבורית",category:"טלפון אלחוטי",consumer_price:159,dealer_price:95,stock:'מעל 200',is_new:false,price_drop:false,dist_price:66,dist_min_qty:30,dist_carton:10,dist_group:"T201"},
@@ -8052,6 +8052,41 @@ const CUSTOMER_DISCOUNTS = {
 // dist_price שטוח לפי פריט (בלאופונקט / דייהו / שיאומי). לקוח מקבל אותו אם מסומן "מחירון מפיץ" בהגדרות admin
 // (עמודה J בגיליון המשתמשים) או ברשימה הקבועה. dist_min_qty = מינימום יחידות לפריט; dist_clear_line = "ניקוי שורה":
 // רק בקניית כל המלאי של הפריט. מתחת לתנאי — המחיר הרגיל (חיסול/מבצע/סוחר). המחיר הנמוך מנצח, בלי כפל הנחות.
+// ══ כתובת אספקה קבועה לסניף (24/11/26) ══
+// כמה משתמשים יכולים לשבת על אותו מספר לקוח (= סיסמה), למשל ד.ש.ש 20105:
+// "רדיו אלקטריק תל אביב" ו"מחסן אספקות". לכל אחד כתובת אספקה משלו (עמודה K בגיליון
+// המשתמשים), שיוצאת באדום בכל הזמנה. במספר משותף מזהים את הסניף לפי השם, לא לפי המספר.
+function _custNumShared(num) {
+  num = String(num || '').trim().replace(/^0+/, '');
+  if (!num || typeof USERS === 'undefined') return false;
+  var c = 0;
+  USERS.forEach(function(u){ if (u.role === 'customer' && String(u.pass || '').trim().replace(/^0+/, '') === num) c++; });
+  return c > 1;
+}
+function _findCustUser(name, num) {
+  var list = (typeof USERS !== 'undefined' ? USERS : []).filter(function(u){ return u.role === 'customer'; });
+  name = String(name || '').trim(); num = String(num || '').trim();
+  var i;
+  if (name) for (i = 0; i < list.length; i++) if (String(list[i].name || list[i].user).trim() === name) return list[i];
+  if (num && !_custNumShared(num)) for (i = 0; i < list.length; i++) if (String(list[i].pass || '').trim() === num) return list[i];
+  return null;
+}
+function _currentShipTo() {
+  try {
+    if (window._histExport) return String(window._histExport.shipTo || '');
+    var a = JSON.parse(sessionStorage.getItem('bc_auth') || '{}');
+    if (a.role === 'customer') {
+      if (a.shipTo) return String(a.shipTo);
+      var me = (typeof USERS !== 'undefined' ? USERS : []).find(function(u){ return u.user === a.user; });
+      return (me && me.shipTo) ? String(me.shipTo) : '';
+    }
+    var nm = ((document.getElementById('customerName') || {}).value || '').trim();
+    var nb = ((document.getElementById('customerNumber') || {}).value || '').trim();
+    var cu = _findCustUser(nm, nb);
+    return (cu && cu.shipTo) ? String(cu.shipTo) : '';
+  } catch(e) { return ''; }
+}
+
 const DIST_ALWAYS = ['299187', '300044'];   // דקל שיווק והפצה; ד.ב גיים סטאר (18/11/26)
 const DIST_DISC = { brands: [], priceField: 'dist_price', comparePromo: true, dist: true, label: 'מחירון מפיץ' };
 function _isDistCustomer(custId) {
@@ -8952,6 +8987,10 @@ function doExportExcel() {
           sc(R,0,txt,true,11,'FFFF0000','right');
           merge(R,0,6); R++;
         });
+    } else {
+      // כתובת אספקה קבועה של הסניף — באדום, כמו משלוח לבית לקוח (24/11/26)
+      var _stXl = _currentShipTo();
+      if (_stXl) { sc(R,0,'כתובת אספקה: ' + _stXl,true,11,'FFFF0000','right'); merge(R,0,6); R++; }
     }
 
     // Blank
@@ -9241,6 +9280,9 @@ function doExportQuote() {
         sc(R,0,txt,true,11,'FFFF0000','right');
         merge(R,0,9); R++;
       });
+    } else {
+      var _stQ = _currentShipTo();
+      if (_stQ) { sc(R,0,'כתובת אספקה: ' + _stQ,true,11,'FFFF0000','right'); merge(R,0,9); R++; }
     }
 
     // Blank
@@ -9638,6 +9680,9 @@ function doSendEmail() {
     body += 'לקוח קצה: ' + _ecMail.name + NL;
     body += 'כתובת: ' + _ecMail.addr + NL;
     body += 'טלפון: ' + _ecMail.phone + NL;
+  } else {
+    var _stMail = _currentShipTo();
+    if (_stMail) body += 'כתובת אספקה: ' + _stMail + NL;
   }
   body += 'תאריך: ' + dateStr + NL + NL;
   items.forEach(function(p,i) {
@@ -11593,9 +11638,11 @@ function _saveHistory(extraOrderNum) {
     // לקוח קצה (משלוח לבית לקוח) — נשמר עם ההזמנה, כדי שהאקסל מההיסטוריה / 📧 יכלול אותו (24/11/26)
     var _ecH = getEndCustomerDetails();
     var _endCust = _ecH ? {name: _ecH.name || '', addr: _ecH.addr || '', phone: _ecH.phone || ''} : null;
+    var _shipToH = _endCust ? '' : _currentShipTo();   // כתובת אספקה קבועה של הסניף (24/11/26)
     var _entry = {
       ship: _ship,
       endCust: _endCust,
+      shipTo: _shipToH,
       date: new Date().toLocaleString('he-IL'),
       customerName: _customer.trim(),
       customerNumber: _custNum.trim(),
@@ -11643,6 +11690,7 @@ function _saveHistory(extraOrderNum) {
         items: _entry.items,
         ship: _ship,
         endCust: _endCust,
+        shipTo: _shipToH,
         status: _ed ? 'עודכנה' : undefined,
         replaces: _ed ? {date: _ed.date, customerName: _ed.customerName, total: _ed.total} : undefined
       }));
@@ -12143,9 +12191,10 @@ function _startNewOrderFromBtn() {
 function _applyAgentCustomerMeta(name, num) {
   var customers = (typeof getCustomersForAgent === 'function') ? getCustomersForAgent() : (typeof USERS !== 'undefined' ? USERS : []);
   var sc = null;
-  for (var i = 0; i < customers.length; i++) {
-    var u = customers[i];
-    if (u.name === name || (num && String(u.pass) === String(num))) { sc = u; break; }
+  // קודם לפי שם (כמה סניפים יכולים לחלוק מספר לקוח — 24/11/26), ורק אז לפי מספר שאינו משותף
+  for (var i = 0; i < customers.length; i++) { if (name && customers[i].name === name) { sc = customers[i]; break; } }
+  if (!sc && num && !_custNumShared(num)) {
+    for (var j = 0; j < customers.length; j++) { if (String(customers[j].pass) === String(num)) { sc = customers[j]; break; } }
   }
   var isImpl = !!(sc && (sc.realization === true || sc.realization === 'true' || sc.realization === 1));
   window._agentSelectedCustomerRealization = isImpl;
@@ -13570,7 +13619,8 @@ function _buildReorderMap(filterName, filterNumber) {
     if (filterName || filterNumber) {
       hist = hist.filter(function(h){
         var _hn = String(h.customerName || '').trim(), _hu = String(h.customerNumber || '').trim();
-        return (filterName && _hn === String(filterName).trim()) || (filterNumber && _hu === String(filterNumber).trim());
+        return (filterName && _hn === String(filterName).trim()) ||
+               (filterNumber && _hu === String(filterNumber).trim() && !(filterName && _custNumShared(filterNumber)));
       });
     }
     hist.forEach(function(h) {
@@ -15077,6 +15127,9 @@ function doSendWhatsApp() {
     text += `👤 לקוח קצה: ${_ecWa.name}\n`;
     text += `📍 כתובת: ${_ecWa.addr}\n`;
     text += `📞 טלפון: ${_ecWa.phone}\n`;
+  } else {
+    const _stWa = _currentShipTo();
+    if (_stWa) text += `📍 *כתובת אספקה: ${_stWa}*\n`;
   }
   text += `📅 תאריך: ${new Date().toLocaleDateString('he-IL')}\n━━━━━━━━━━━━━━━━━━\n`;
   items.forEach((p,i) => {
@@ -15635,6 +15688,19 @@ document.addEventListener('DOMContentLoaded', function(){
     try { buildHome(); } catch(e){}
     try { loadCloudCustomers(); } catch(e){}
     try { _applyAgentSelect(auth); } catch(e){}
+    // כניסה שמורה לא עוברת שוב בשרת — מרעננים ברקע את כתובת האספקה (נוספה 24/11/26)
+    if (auth.role === 'customer' && auth.user && auth.pass) {
+      fetch(SHEETS_URL + '?action=login&user=' + encodeURIComponent(auth.user) + '&pass=' + encodeURIComponent(auth.pass))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d || !d.ok || !d.user) return;
+          var cur = JSON.parse(sessionStorage.getItem('bc_auth') || '{}');
+          if (cur.user !== auth.user) return;
+          cur.shipTo = d.user.shipTo || ''; cur.dist = !!d.user.dist;
+          sessionStorage.setItem('bc_auth', JSON.stringify(cur));
+          try { var ps = JSON.parse(localStorage.getItem('bc_auth_persist') || 'null'); if (ps && ps.user === auth.user) { ps.shipTo = cur.shipTo; ps.dist = cur.dist; localStorage.setItem('bc_auth_persist', JSON.stringify(ps)); } } catch(e){}
+        }).catch(function(){});
+    }
     setTimeout(function(){ try { _syncHistoryFromCloud(); } catch(e){} }, 2500);
     setTimeout(function(){ try { _syncQuotesFromCloud(); } catch(e){} }, 3200);
 
@@ -18180,7 +18246,7 @@ function switchMgmtTab(tab) {
     _repBtn.style.border     = tab === 'report' ? 'none'    : '1px solid #a87fff';
   }
   if (tab === 'brands') brandMgmtPopulateSel();
-  if (tab === 'impl')   { implMgmtPopulate(); distMgmtPopulate(); }
+  if (tab === 'impl')   { implMgmtPopulate(); distMgmtPopulate(); shipToMgmtPopulate(); }
   if (tab === 'report') initAgentReport();
 }
 
@@ -19404,6 +19470,46 @@ function distMgmtPopulate() {
   }).join('');
 }
 
+function _escHtml(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function shipToMgmtPopulate() {
+  var container = document.getElementById('shipToList');
+  if (!container) return;
+  var q = ((document.getElementById('shipToSearch') || {}).value || '').trim();
+  var customers = USERS.filter(function(u){ return u.role === 'customer'; });
+  // בלי חיפוש — רק מי שכבר יש לו כתובת; בחיפוש — כל מי שתואם
+  var list = customers.filter(function(u){ return q ? ((u.name || '') + ' ' + u.user + ' ' + (u.pass || '')).indexOf(q) !== -1 : !!u.shipTo; });
+  if (!list.length) { container.innerHTML = '<div style="color:#888;font-size:.8rem;padding:4px">' + (q ? 'לא נמצא לקוח.' : 'אין עדיין כתובות. חפש לקוח כדי להוסיף.') + '</div>'; return; }
+  container.innerHTML = list.slice(0, 30).map(function(u) {
+    var userEnc = encodeURIComponent(u.user);
+    var shared = _custNumShared(u.pass);
+    return '<div style="background:' + (u.shipTo ? 'rgba(239,83,80,.10)' : 'rgba(30,30,50,.6)') + ';border:1px solid ' + (u.shipTo ? 'rgba(239,83,80,.5)' : '#333') + ';border-radius:10px;padding:10px 14px;margin-bottom:6px">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div><div style="color:#fff;font-size:.85rem;font-weight:700">' + _escHtml(u.name || u.user) + '</div>' +
+      '<div style="color:#888;font-size:.75rem"><span style="direction:ltr;unicode-bidi:isolate">' + _escHtml(u.user) + '</span> · ' + _escHtml(u.pass || '') + (shared ? ' · <span style="color:#ffb74d">מספר משותף</span>' : '') + '</div></div></div>' +
+      '<div style="display:flex;gap:6px;margin-top:8px"><input id="shipToIn_' + userEnc + '" value="' + _escHtml(u.shipTo || '') + '" placeholder="רחוב ומספר, עיר · איש קשר · טלפון" style="flex:1;min-width:0;padding:7px 9px;border-radius:7px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:.82rem">' +
+      '<button onclick="shipToSave(decodeURIComponent(&quot;' + userEnc + '&quot;))" style="padding:7px 12px;border-radius:7px;border:none;background:#ef5350;color:#fff;font-weight:700;cursor:pointer;font-size:.8rem">שמור</button></div>' +
+    '</div>';
+  }).join('');
+}
+function shipToSave(username) {
+  var u = USERS.find(function(x){ return x.user === username; });
+  var inp = document.getElementById('shipToIn_' + encodeURIComponent(username));
+  if (!u || !inp) return;
+  var val = inp.value.trim().slice(0, 300);
+  inp.disabled = true;
+  fetch(SHEETS_URL + '?action=updateUser&user=' + encodeURIComponent(username) + '&shipTo=' + encodeURIComponent(val) + _authQS())
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      inp.disabled = false;
+      if (d.ok) {
+        u.shipTo = val;
+        try { var cc = JSON.parse(localStorage.getItem('bc_cloud_customers') || '[]'); cc.forEach(function(c){ if (c.user === username) c.shipTo = val; }); localStorage.setItem('bc_cloud_customers', JSON.stringify(cc)); } catch(e) {}
+        inp.style.borderColor = '#4caf50';
+        setTimeout(shipToMgmtPopulate, 600);
+      } else alert('שגיאה בשמירה');
+    })
+    .catch(function() { inp.disabled = false; alert('שגיאת חיבור'); });
+}
+
 function distToggle(username) {
   var u = USERS.find(function(x){ return x.user === username; });
   if (!u) return;
@@ -20618,6 +20724,13 @@ function lbKeyHandler(e) {
       </p>
       <input id="distSearch" placeholder="🔍 חיפוש לקוח להוספה..." oninput="distMgmtPopulate()" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;margin-bottom:8px;font-size:.85rem">
       <div id="distList" style="display:flex;flex-direction:column;gap:0"></div>
+      <div style="border-top:1px solid #444;margin:18px 0 12px"></div>
+      <div style="color:#ef5350;font-weight:700;font-size:.95rem;margin-bottom:6px">📍 כתובת אספקה קבועה</div>
+      <p style="color:#888;font-size:.8rem;margin:0 0 14px;line-height:1.5">
+        כתובת שיוצאת <strong style="color:#ef5350">באדום</strong> בכל הזמנה של המשתמש (אקסל, וואטסאפ, מייל, הצעת מחיר). מתאים לכמה סניפים על אותו מספר לקוח — לכל משתמש כתובת משלו. כתובת, איש קשר וטלפון בשורה אחת.
+      </p>
+      <input id="shipToSearch" placeholder="🔍 חיפוש לקוח..." oninput="shipToMgmtPopulate()" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;margin-bottom:8px;font-size:.85rem">
+      <div id="shipToList" style="display:flex;flex-direction:column;gap:0"></div>
     </div>
 
     <!-- ══ TAB: סנכרון היסטוריה ══ -->
@@ -21256,6 +21369,7 @@ function customerAutoCompleteSelect(name, num) {
   var dd = document.getElementById('customerDropdown');
   if (dd) dd.style.display = 'none';
   _autoCompleteIdx = -1;
+  try { _applyAgentCustomerMeta(name, num); } catch(e) {}
   // מסגרות ירוקות — סוכן בחר לקוח, הצג היסטוריה
   if ((name || num) && typeof _buildReorderMap === 'function') {
     _buildReorderMap(name, num);
